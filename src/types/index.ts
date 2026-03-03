@@ -294,6 +294,26 @@ export interface ProjectFilters {
   userLng?: number
 }
 
+// ─── Notification ────────────────────────────────────────────
+
+export type NotificationType =
+  | 'nova_proposta'
+  | 'proposta_aceita'
+  | 'proposta_recusada'
+  | 'projeto_finalizado'
+  | 'nova_avaliacao'
+
+export interface Notification {
+  id: string
+  user_id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  link: string | null
+  is_read: boolean
+  created_at: string
+}
+
 // ─── Admin ───────────────────────────────────────────────────
 
 export interface AdminStats {
