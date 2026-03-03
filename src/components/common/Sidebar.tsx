@@ -18,6 +18,7 @@ import {
   ListChecks,
   Settings,
   MessageSquare,
+  Store,
   X,
 } from 'lucide-react'
 
@@ -64,6 +65,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const companyItems: NavItem[] = [
     { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
     { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
+    { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
+    { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
   ]
 
   const professionalItems: NavItem[] = [
@@ -87,11 +90,30 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
   const getTypeItems = (): NavItem[] => {
     switch (userType) {
-      case 'empresa': return companyItems
-      case 'profissional': return professionalItems
-      case 'fornecedor': return supplierItems
-      case 'admin': return [...companyItems, ...professionalItems, ...supplierItems, ...adminItems]
-      default: return []
+      case 'empresa':
+        return companyItems
+      case 'profissional':
+        return professionalItems
+      case 'fornecedor':
+        return supplierItems
+      case 'fornecedor_empresa':
+        return [
+          ...supplierItems,
+          { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
+          { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
+          { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
+        ]
+      case 'empresa_prestadora':
+        return [
+          ...professionalItems,
+          { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
+          { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
+          { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
+        ]
+      case 'admin':
+        return [...companyItems, ...professionalItems, ...supplierItems, ...adminItems]
+      default:
+        return []
     }
   }
 
@@ -155,6 +177,8 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               {userType === 'empresa' && 'Projetos'}
               {userType === 'profissional' && 'Trabalhos'}
               {userType === 'fornecedor' && 'Produtos'}
+              {userType === 'fornecedor_empresa' && 'Negócios'}
+              {userType === 'empresa_prestadora' && 'Trabalhos'}
               {userType === 'admin' && 'Gestão'}
             </p>
             {getTypeItems().map((item) => <NavLink key={item.path} item={item} />)}

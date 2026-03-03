@@ -31,6 +31,7 @@ import { ProjectsListPage } from '@/pages/dashboard/professional/ProjectsListPag
 import { NegotiationsPage } from '@/pages/dashboard/professional/NegotiationsPage'
 import { ManageProjectsPage } from '@/pages/dashboard/professional/ManageProjectsPage'
 import { ProfessionalsListPage } from '@/pages/dashboard/professional/ProfessionalsListPage'
+import { ProfessionalDetailPage } from '@/pages/dashboard/professional/ProfessionalDetailPage'
 
 // ─── Supplier Pages ───────────────────────────────────────────
 import { ManageProductsPage } from '@/pages/dashboard/supplier/ManageProductsPage'
@@ -98,6 +99,7 @@ export const router = createBrowserRouter([
       { path: 'negociacoes', element: <NegotiationsPage /> },
       { path: 'gerenciar-projetos', element: <ManageProjectsPage /> },
       { path: 'profissionais', element: <ProfessionalsListPage /> },
+      { path: 'profissional/:id', element: <ProfessionalDetailPage /> },
 
       // Supplier
       { path: 'produtos', element: <ManageProductsPage /> },
