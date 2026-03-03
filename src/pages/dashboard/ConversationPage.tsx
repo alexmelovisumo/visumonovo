@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, Send, ArrowUpRight } from 'lucide-react'
+import { ChevronLeft, Send, ArrowUpRight, ImageIcon, X, AlertCircle } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
@@ -31,13 +32,45 @@ function MessageBubble({ msg, isOwn }: { msg: MsgWithSender; isOwn: boolean }) {
         </div>
       )}
       <div className={cn(
-        'max-w-[75%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed',
+        'max-w-[75%] rounded-2xl text-sm leading-relaxed overflow-hidden',
         isOwn
           ? 'bg-primary-600 text-white rounded-br-sm'
           : 'bg-white border border-slate-200 text-slate-800 rounded-bl-sm shadow-sm'
       )}>
-        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-        <p className={cn('text-[10px] mt-1 text-right', isOwn ? 'text-primary-200' : 'text-slate-400')}>
+        {/* Progress update badge */}
+        {msg.is_progress_update && (
+          <div className={cn(
+            'flex items-center gap-1.5 px-3 pt-2 text-xs font-medium',
+            isOwn ? 'text-primary-200' : 'text-primary-600'
+          )}>
+            <AlertCircle size={11} />
+            Atualização de progresso
+          </div>
+        )}
+
+        {/* Image */}
+        {msg.image_url && (
+          <a href={msg.image_url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={msg.image_url}
+              alt="Imagem"
+              className="w-full max-w-xs object-cover hover:opacity-90 transition-opacity"
+              style={{ maxHeight: '240px', objectFit: 'cover' }}
+            />
+          </a>
+        )}
+
+        {/* Text content */}
+        {msg.content && (
+          <p className="whitespace-pre-wrap break-words px-4 py-2.5">{msg.content}</p>
+        )}
+
+        {/* Time */}
+        <p className={cn(
+          'text-[10px] px-4 pb-2 text-right',
+          isOwn ? 'text-primary-200' : 'text-slate-400',
+          !msg.content && !msg.image_url ? 'pt-2' : ''
+        )}>
           {time}
         </p>
       </div>
@@ -65,8 +98,12 @@ export function ConversationPage() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [text, setText] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   // Fetch conversation details
   const { data: conv } = useQuery({
@@ -147,27 +184,75 @@ export function ConversationPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem válida'); return }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Imagem muito grande (máx. 10 MB)'); return }
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const clearImage = () => {
+    setImageFile(null)
+    setImagePreview(null)
+  }
+
   // Send message
   const send = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, imageUrl }: { content: string; imageUrl?: string }) => {
       const { error } = await supabase.from('messages').insert({
         conversation_id: id!,
         sender_id:       user!.id,
-        content:         content.trim(),
+        content:         content || '',
+        image_url:       imageUrl ?? null,
         is_read:         false,
       })
       if (error) throw error
     },
     onSuccess: () => {
       setText('')
+      clearImage()
       queryClient.invalidateQueries({ queryKey: ['messages', id] })
     },
+    onError: () => toast.error('Erro ao enviar mensagem.'),
   })
 
-  const handleSend = () => {
+  const handleSend = async () => {
     const content = text.trim()
-    if (!content || send.isPending) return
-    send.mutate(content)
+    if (!content && !imageFile) return
+    if (send.isPending || uploadingImage) return
+
+    let imageUrl: string | undefined
+
+    if (imageFile) {
+      setUploadingImage(true)
+      try {
+        const ext = imageFile.name.split('.').pop()
+        const filePath = `${id}/${user!.id}-${Date.now()}.${ext}`
+
+        const { error: upErr } = await supabase.storage
+          .from('chat-images')
+          .upload(filePath, imageFile)
+
+        if (upErr) throw upErr
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('chat-images')
+          .getPublicUrl(filePath)
+
+        imageUrl = publicUrl
+      } catch {
+        toast.error('Erro ao enviar imagem.')
+        setUploadingImage(false)
+        return
+      }
+      setUploadingImage(false)
+    }
+
+    send.mutate({ content, imageUrl })
   }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -191,6 +276,7 @@ export function ConversationPage() {
   }
 
   const otherName = conv?.other.full_name ?? conv?.other.email ?? '...'
+  const isSending = send.isPending || uploadingImage
 
   return (
     <div className="flex flex-col h-[calc(100dvh-3.5rem)] max-w-3xl mx-auto">
@@ -251,9 +337,45 @@ export function ConversationPage() {
         <div ref={bottomRef} />
       </div>
 
+      {/* Image preview strip */}
+      {imagePreview && (
+        <div className="bg-white border-t border-slate-100 px-4 pt-3">
+          <div className="relative inline-block">
+            <img
+              src={imagePreview}
+              alt="preview"
+              className="h-20 w-20 object-cover rounded-xl border border-slate-200"
+            />
+            <button
+              onClick={clearImage}
+              className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5"
+            >
+              <X size={12} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="bg-white border-t border-slate-200 px-4 py-3 shrink-0">
-        <div className="flex items-end gap-3">
+        <div className="flex items-end gap-2">
+          {/* Image upload button */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            onChange={handleImageSelect}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={isSending}
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-slate-300 text-slate-400 hover:text-primary-600 hover:border-primary-300 transition-colors disabled:opacity-40"
+          >
+            <ImageIcon size={18} />
+          </button>
+
           <textarea
             ref={inputRef}
             value={text}
@@ -270,11 +392,11 @@ export function ConversationPage() {
           />
           <Button
             onClick={handleSend}
-            disabled={!text.trim()}
-            isLoading={send.isPending}
+            disabled={(!text.trim() && !imageFile) || isSending}
+            isLoading={isSending}
             className="shrink-0 w-10 h-10 p-0 rounded-xl"
           >
-            {!send.isPending && <Send size={16} />}
+            {!isSending && <Send size={16} />}
           </Button>
         </div>
         <p className="text-xs text-slate-400 mt-1.5">Shift+Enter para nova linha</p>

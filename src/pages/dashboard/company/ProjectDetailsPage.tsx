@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
@@ -6,6 +7,7 @@ import { z } from 'zod'
 import {
   MapPin, Calendar, DollarSign, Eye, Edit2, Trash2,
   ChevronLeft, Clock, CheckCircle2, XCircle, MessageSquare,
+  CheckCheck, Paperclip, FileText, Image as ImageIcon,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -17,7 +19,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { PROJECT_STATUS_LABELS, PROPOSAL_STATUS_LABELS } from '@/utils/constants'
-import type { Project, Proposal, Profile } from '@/types'
+import { CompleteProjectModal } from '@/components/common/CompleteProjectModal'
+import type { Project, Proposal, Profile, ProjectAttachment } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -27,6 +30,12 @@ function formatBudget(min: number | null, max: number | null) {
   if (min && max) return `${fmt(min)} – ${fmt(max)}`
   if (min) return `A partir de ${fmt(min)}`
   return `Até ${fmt(max!)}`
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 // ─── Send Proposal Form ───────────────────────────────────────
@@ -226,6 +235,80 @@ function ProposalCard({
   )
 }
 
+// ─── Attachments Section ──────────────────────────────────────
+
+function AttachmentsSection({ projectId }: { projectId: string }) {
+  const { data: attachments = [], isLoading } = useQuery({
+    queryKey: ['project-attachments', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('project_attachments')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as ProjectAttachment[]
+    },
+  })
+
+  if (isLoading || attachments.length === 0) return null
+
+  const photos = attachments.filter((a) => a.file_type.startsWith('image/'))
+  const docs   = attachments.filter((a) => !a.file_type.startsWith('image/'))
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
+      <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+        <Paperclip size={16} /> Arquivos do projeto
+      </h2>
+
+      {photos.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+            <ImageIcon size={11} /> Fotos de conclusão
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+            {photos.map((a) => (
+              <a key={a.id} href={a.file_url} target="_blank" rel="noopener noreferrer">
+                <img
+                  src={a.file_url}
+                  alt={a.caption ?? a.file_name}
+                  className="w-full aspect-square object-cover rounded-xl hover:opacity-90 transition-opacity border border-slate-100"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {docs.length > 0 && (
+        <div>
+          <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+            <FileText size={11} /> Documentos
+          </p>
+          <div className="space-y-2">
+            {docs.map((a) => (
+              <a
+                key={a.id}
+                href={a.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 hover:border-primary-300 hover:bg-primary-50 transition-all group"
+              >
+                <FileText size={18} className="text-slate-400 group-hover:text-primary-600 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-700 truncate">{a.file_name}</p>
+                  <p className="text-xs text-slate-400">{formatBytes(a.file_size)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 export function ProjectDetailsPage() {
@@ -233,6 +316,7 @@ export function ProjectDetailsPage() {
   const navigate = useNavigate()
   const { user, profile } = useAuthStore()
   const queryClient = useQueryClient()
+  const [showCompleteModal, setShowCompleteModal] = useState(false)
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -283,7 +367,6 @@ export function ProjectDetailsPage() {
       const professionalId = proposal.professional_id
       const projectId      = project!.id
 
-      // Check for existing conversation
       const { data: existing } = await supabase
         .from('conversations')
         .select('id')
@@ -344,11 +427,14 @@ export function ProjectDetailsPage() {
   }
 
   const isOwner        = project.client_id === user?.id
-  const isProfissional = profile?.user_type === 'profissional'
+  const isProfissional = profile?.user_type === 'profissional' || profile?.user_type === 'empresa_prestadora'
   const myProposal     = proposals.find((p) => p.professional_id === user?.id)
+  const acceptedProposal = proposals.find((p) => p.status === 'accepted')
   const statusLabel    = PROJECT_STATUS_LABELS[project.status] ?? project.status
   const images         = [...(project.images ?? [])].sort((a, b) => a.display_order - b.display_order)
   const categories     = (project.categories ?? []).map((c) => c.category.name)
+
+  const canFinalize = isOwner && acceptedProposal && project.status !== 'completed' && project.status !== 'cancelled'
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -366,7 +452,9 @@ export function ProjectDetailsPage() {
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className={cn(
                 'text-xs font-medium px-2.5 py-1 rounded-full',
-                project.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+                project.status === 'open'      ? 'bg-green-100 text-green-700'   :
+                project.status === 'completed' ? 'bg-blue-100 text-blue-700'     :
+                'bg-slate-100 text-slate-600'
               )}>
                 {statusLabel}
               </span>
@@ -415,6 +503,28 @@ export function ProjectDetailsPage() {
         </div>
 
         <p className="text-slate-700 text-sm leading-relaxed whitespace-pre-line">{project.description}</p>
+
+        {/* Finalizar projeto */}
+        {canFinalize && (
+          <div className="mt-5 pt-5 border-t border-slate-100">
+            <Button
+              onClick={() => setShowCompleteModal(true)}
+              className="w-full bg-green-600 hover:bg-green-700"
+            >
+              <CheckCheck size={16} /> Finalizar Projeto
+            </Button>
+            <p className="text-xs text-slate-400 text-center mt-2">
+              Marque o projeto como concluído e avalie o profissional
+            </p>
+          </div>
+        )}
+
+        {project.status === 'completed' && (
+          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl px-4 py-3">
+            <CheckCheck size={16} className="shrink-0" />
+            <span className="text-sm font-medium">Projeto finalizado com sucesso</span>
+          </div>
+        )}
       </div>
 
       {/* Images */}
@@ -434,6 +544,9 @@ export function ProjectDetailsPage() {
           </div>
         </div>
       )}
+
+      {/* Project Attachments (photos from completion) */}
+      {id && <AttachmentsSection projectId={id} />}
 
       {/* Proposals section */}
       {(isOwner || isProfissional) && (
@@ -481,6 +594,21 @@ export function ProjectDetailsPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* Complete Modal */}
+      {showCompleteModal && acceptedProposal && (
+        <CompleteProjectModal
+          projectId={project.id}
+          professionalId={acceptedProposal.professional_id}
+          professionalName={acceptedProposal.professional?.full_name ?? 'profissional'}
+          onClose={() => setShowCompleteModal(false)}
+          onComplete={() => {
+            setShowCompleteModal(false)
+            queryClient.invalidateQueries({ queryKey: ['project', id] })
+            queryClient.invalidateQueries({ queryKey: ['project-attachments', id] })
+          }}
+        />
       )}
     </div>
   )

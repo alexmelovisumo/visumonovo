@@ -144,10 +144,40 @@ export interface Message {
   conversation_id: string
   sender_id: string
   content: string
+  image_url: string | null
+  is_progress_update: boolean
   is_read: boolean
   created_at: string
   // Relations
   sender?: Profile
+}
+
+// ─── Portfolio ────────────────────────────────────────────────
+
+export interface PortfolioImage {
+  id: string
+  profile_id: string
+  image_url: string
+  title: string | null
+  description: string | null
+  display_order: number
+  created_at: string
+}
+
+// ─── Project Attachment ───────────────────────────────────────
+
+export interface ProjectAttachment {
+  id: string
+  project_id: string
+  uploaded_by: string
+  file_url: string
+  file_name: string
+  file_type: string
+  file_size: number
+  category: string | null
+  caption: string | null
+  created_at: string
+  uploader?: Pick<Profile, 'id' | 'full_name' | 'email'>
 }
 
 // ─── Subscription ─────────────────────────────────────────────
