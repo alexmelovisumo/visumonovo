@@ -86,6 +86,7 @@ export default defineConfig({
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-query':    ['@tanstack/react-query'],
           'vendor-map':      ['leaflet', 'react-leaflet'],
+          'vendor-charts':   ['recharts'],
           'vendor-forms':    ['react-hook-form', '@hookform/resolvers', 'zod'],
           'vendor-ui':       ['lucide-react', 'sonner', 'date-fns'],
           'vendor-store':    ['zustand'],
