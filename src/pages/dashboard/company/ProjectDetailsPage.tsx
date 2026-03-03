@@ -7,7 +7,7 @@ import { z } from 'zod'
 import {
   MapPin, Calendar, DollarSign, Eye, Edit2, Trash2,
   ChevronLeft, Clock, CheckCircle2, XCircle, MessageSquare,
-  CheckCheck, Paperclip, FileText, Image as ImageIcon,
+  CheckCheck, Paperclip, FileText, Image as ImageIcon, Star,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { PROJECT_STATUS_LABELS, PROPOSAL_STATUS_LABELS } from '@/utils/constants'
 import { CompleteProjectModal } from '@/components/common/CompleteProjectModal'
+import { WriteReviewModal } from '@/components/common/WriteReviewModal'
 import type { Project, Proposal, Profile, ProjectAttachment } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -317,6 +318,7 @@ export function ProjectDetailsPage() {
   const { user, profile } = useAuthStore()
   const queryClient = useQueryClient()
   const [showCompleteModal, setShowCompleteModal] = useState(false)
+  const [showReviewModal, setShowReviewModal] = useState(false)
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -333,6 +335,20 @@ export function ProjectDetailsPage() {
       }
     },
     enabled: !!id,
+  })
+
+  const { data: existingReview } = useQuery({
+    queryKey: ['my-review', id, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('reviews')
+        .select('id')
+        .eq('project_id', id!)
+        .eq('reviewer_id', user!.id)
+        .maybeSingle()
+      return data
+    },
+    enabled: !!id && !!user?.id,
   })
 
   const { data: proposals = [] } = useQuery({
@@ -520,9 +536,27 @@ export function ProjectDetailsPage() {
         )}
 
         {project.status === 'completed' && (
-          <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-green-700 bg-green-50 rounded-xl px-4 py-3">
-            <CheckCheck size={16} className="shrink-0" />
-            <span className="text-sm font-medium">Projeto finalizado com sucesso</span>
+          <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+            <div className="flex items-center gap-2 text-green-700 bg-green-50 rounded-xl px-4 py-3">
+              <CheckCheck size={16} className="shrink-0" />
+              <span className="text-sm font-medium">Projeto finalizado com sucesso</span>
+            </div>
+
+            {isOwner && acceptedProposal && (
+              existingReview ? (
+                <div className="flex items-center gap-2 text-amber-700 bg-amber-50 rounded-xl px-4 py-3">
+                  <Star size={15} className="fill-amber-500 text-amber-500 shrink-0" />
+                  <span className="text-sm font-medium">Você já avaliou este profissional</span>
+                </div>
+              ) : (
+                <Button
+                  onClick={() => setShowReviewModal(true)}
+                  className="w-full bg-amber-500 hover:bg-amber-600"
+                >
+                  <Star size={15} /> Avaliar profissional
+                </Button>
+              )
+            )}
           </div>
         )}
       </div>
@@ -607,6 +641,20 @@ export function ProjectDetailsPage() {
             setShowCompleteModal(false)
             queryClient.invalidateQueries({ queryKey: ['project', id] })
             queryClient.invalidateQueries({ queryKey: ['project-attachments', id] })
+          }}
+        />
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && acceptedProposal && (
+        <WriteReviewModal
+          projectId={project.id}
+          reviewedId={acceptedProposal.professional_id}
+          reviewedName={acceptedProposal.professional?.full_name ?? 'profissional'}
+          onClose={() => setShowReviewModal(false)}
+          onDone={() => {
+            setShowReviewModal(false)
+            queryClient.invalidateQueries({ queryKey: ['my-review', id, user?.id] })
           }}
         />
       )}
