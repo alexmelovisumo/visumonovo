@@ -16,6 +16,7 @@ import {
   Users,
   Tag,
   BarChart3,
+  BarChart2,
   ListChecks,
   Settings,
   MessageSquare,
@@ -77,6 +78,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Projetos Disponíveis', path: '/dashboard/projetos', icon: <Search size={18} /> },
     { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} /> },
     { label: 'Meus Projetos', path: '/dashboard/gerenciar-projetos', icon: <ListChecks size={18} /> },
+    { label: 'Estatísticas', path: '/dashboard/estatisticas', icon: <BarChart2 size={18} /> },
   ]
 
   const supplierItems: NavItem[] = [

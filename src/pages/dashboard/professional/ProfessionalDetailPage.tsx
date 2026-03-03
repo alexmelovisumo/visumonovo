@@ -1,5 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { useEffect } from 'react'
 import {
   ChevronLeft, MapPin, Star, Globe, Linkedin, Phone,
   MessageCircle, Image as ImageIcon, UserCircle,
@@ -91,6 +92,13 @@ export function ProfessionalDetailPage() {
   }
 
   const canContact = user && myProfile?.user_type !== 'profissional' && myProfile?.user_type !== 'empresa_prestadora'
+
+  // Register profile view (skip own profile)
+  useEffect(() => {
+    if (prof && user && prof.id !== user.id) {
+      supabase.from('profile_views').insert({ profile_id: prof.id, viewer_id: user.id })
+    }
+  }, [prof?.id, user?.id])
 
   if (isLoading) {
     return (

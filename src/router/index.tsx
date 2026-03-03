@@ -34,6 +34,7 @@ import { ManageProjectsPage } from '@/pages/dashboard/professional/ManageProject
 import { ProfessionalsListPage } from '@/pages/dashboard/professional/ProfessionalsListPage'
 import { ProfessionalDetailPage } from '@/pages/dashboard/professional/ProfessionalDetailPage'
 import { NearbyProfessionalsPage } from '@/pages/dashboard/professional/NearbyProfessionalsPage'
+import { ProfessionalStatsPage } from '@/pages/dashboard/professional/ProfessionalStatsPage'
 
 // ─── Supplier Pages ───────────────────────────────────────────
 import { ManageProductsPage } from '@/pages/dashboard/supplier/ManageProductsPage'
@@ -105,6 +106,7 @@ export const router = createBrowserRouter([
       { path: 'profissionais', element: <ProfessionalsListPage /> },
       { path: 'profissional/:id', element: <ProfessionalDetailPage /> },
       { path: 'profissionais/mapa', element: <NearbyProfessionalsPage /> },
+      { path: 'estatisticas', element: <ProfessionalStatsPage /> },
 
       // Supplier
       { path: 'produtos', element: <ManageProductsPage /> },
