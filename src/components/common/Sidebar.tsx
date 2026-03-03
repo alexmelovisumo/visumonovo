@@ -11,6 +11,7 @@ import {
   Package,
   CreditCard,
   MapPin,
+  Map,
   User,
   Users,
   Tag,
@@ -66,6 +67,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
     { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
     { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
+    { label: 'Mapa de Profissionais', path: '/dashboard/profissionais/mapa', icon: <Map size={18} /> },
     { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
   ]
 
@@ -102,6 +104,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
           { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
           { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
+          { label: 'Mapa de Profissionais', path: '/dashboard/profissionais/mapa', icon: <Map size={18} /> },
         ]
       case 'empresa_prestadora':
         return [

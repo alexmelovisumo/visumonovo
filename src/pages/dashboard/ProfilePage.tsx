@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   User, Camera, Save, Plus, Trash2, Globe, Linkedin,
-  MapPin, Phone, FileText, Image as ImageIcon, Upload,
+  MapPin, Phone, FileText, Image as ImageIcon, Upload, Navigation,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -239,6 +239,25 @@ export function ProfilePage() {
   const { user, profile, fetchProfile } = useAuthStore()
   const queryClient = useQueryClient()
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.profile_image_url ?? null)
+  const [geoSaving, setGeoSaving] = useState(false)
+  const [geoSaved, setGeoSaved] = useState(false)
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) { toast.error('Geolocalização não suportada neste navegador'); return }
+    setGeoSaving(true)
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
+          .eq('id', user!.id)
+        if (error) { toast.error('Erro ao salvar localização') }
+        else { toast.success('Localização GPS salva!'); setGeoSaved(true) }
+        setGeoSaving(false)
+      },
+      () => { toast.error('Permissão de localização negada'); setGeoSaving(false) }
+    )
+  }
 
   const { register, handleSubmit, formState: { errors } } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -377,9 +396,23 @@ export function ProfilePage() {
 
           {/* Localização */}
           <div>
-            <p className="text-sm font-medium text-slate-700 mb-2 flex items-center gap-1.5">
-              <MapPin size={13} /> Localização
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-medium text-slate-700 flex items-center gap-1.5">
+                <MapPin size={13} /> Localização
+              </p>
+              <button
+                type="button"
+                onClick={captureLocation}
+                disabled={geoSaving}
+                className="flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border border-primary-200 text-primary-600 hover:bg-primary-50 transition-colors disabled:opacity-50"
+              >
+                {geoSaving
+                  ? <div className="w-3 h-3 border-2 border-primary-400 border-t-transparent rounded-full animate-spin" />
+                  : <Navigation size={11} />
+                }
+                {geoSaved ? 'GPS salvo ✓' : 'Usar minha localização'}
+              </button>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
                 <Input placeholder="Cidade" {...register('city')} />
