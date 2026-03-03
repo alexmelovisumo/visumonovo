@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -125,8 +125,18 @@ function StepIndicator({ current }: { current: Step }) {
 
 // ─── Main Component ───────────────────────────────────────────
 
+// Mapa: nome do plano → user_type
+const PLAN_TO_USER_TYPE: Record<string, UserType> = {
+  plano_profissional:       'profissional',
+  plano_fornecedor:         'fornecedor',
+  plano_empresa:            'empresa',
+  plano_fornecedor_empresa: 'fornecedor_empresa',
+  plano_empresa_prestadora: 'empresa_prestadora',
+}
+
 export function SignUpPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { setUser, fetchProfile } = useAuthStore()
   const [step, setStep] = useState<Step>(1)
   const [userType, setUserType] = useState<UserType | null>(null)
@@ -138,6 +148,15 @@ export function SignUpPage() {
   const accountForm = useForm<AccountData>({ resolver: zodResolver(accountSchema) })
   // Form step 3
   const profileForm = useForm<ProfileData>({ resolver: zodResolver(profileSchema) })
+
+  // Se vier com ?plano= na URL, pré-seleciona o tipo e pula para step 2
+  useEffect(() => {
+    const plano = searchParams.get('plano')
+    if (plano && PLAN_TO_USER_TYPE[plano]) {
+      setUserType(PLAN_TO_USER_TYPE[plano])
+      setStep(2)
+    }
+  }, [searchParams])
 
   // ── Step 1: Choose user type ──────────────────────────────
 
@@ -225,7 +244,7 @@ export function SignUpPage() {
             Crie sua conta em poucos minutos
           </h2>
           <p className="text-primary-300 text-sm leading-relaxed">
-            Plano gratuito disponível. Sem necessidade de cartão de crédito para começar.
+            Planos anuais a partir de R$100. Pagamento seguro via PagBank.
           </p>
         </div>
       </div>

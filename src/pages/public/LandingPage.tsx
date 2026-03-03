@@ -26,10 +26,10 @@ function Nav() {
             Entrar
           </Link>
           <Link
-            to="/cadastro"
+            to="/escolher-plano"
             className="px-4 py-2 rounded-lg bg-primary-600 text-sm font-semibold text-white hover:bg-primary-700 transition-colors"
           >
-            Cadastrar grátis
+            Cadastrar
           </Link>
         </div>
       </div>
@@ -76,11 +76,11 @@ function Hero() {
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-1.5">
             <CheckCircle2 size={14} className="text-green-500" />
-            Cadastro gratuito
+            Planos anuais acessíveis
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 size={14} className="text-green-500" />
-            Sem cartão de crédito
+            Pagamento seguro
           </div>
           <div className="flex items-center gap-1.5">
             <CheckCircle2 size={14} className="text-green-500" />
@@ -343,7 +343,7 @@ function CTA() {
         >
           Ver planos e começar <ArrowRight size={20} />
         </Link>
-        <p className="text-xs text-slate-400 mt-4">Sem cartão de crédito. Cancele quando quiser.</p>
+        <p className="text-xs text-slate-400 mt-4">Planos anuais. Pagamento seguro via PagBank.</p>
       </div>
     </section>
   )

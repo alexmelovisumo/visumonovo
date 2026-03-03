@@ -277,9 +277,9 @@ export function PlanSelectionPage() {
   }
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
-    // Não está logado → vai para o cadastro
+    // Não está logado → vai para o cadastro com plano pre-selecionado
     if (!user) {
-      navigate('/cadastro')
+      navigate(`/cadastro?plano=${plan.name}`)
       return
     }
 
