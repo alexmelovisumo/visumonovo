@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Check, Zap, ArrowRight, LogOut, Tag, X, Gift } from 'lucide-react'
+import { ChevronLeft, Tag, X, Check, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -27,7 +27,7 @@ async function fetchAllPlans(): Promise<SubscriptionPlan[]> {
 
 interface CouponResult {
   valid: boolean
-  discountPct: number   // 0–100
+  discountPct: number
   label: string
   code: string
 }
@@ -42,19 +42,13 @@ async function validateCoupon(code: string): Promise<CouponResult> {
     .eq('is_active', true)
     .maybeSingle()
 
-  if (!data) {
-    return { valid: false, discountPct: 0, label: '', code: normalized }
-  }
+  if (!data) return { valid: false, discountPct: 0, label: '', code: normalized }
 
-  // Verifica expiração
-  if (data.valid_until && new Date(data.valid_until) < new Date()) {
+  if (data.valid_until && new Date(data.valid_until) < new Date())
     return { valid: false, discountPct: 0, label: '', code: normalized }
-  }
 
-  // Verifica usos
-  if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+  if (data.max_uses !== null && data.current_uses >= data.max_uses)
     return { valid: false, discountPct: 0, label: '', code: normalized }
-  }
 
   let discountPct = 0
   let label = ''
@@ -70,10 +64,60 @@ async function validateCoupon(code: string): Promise<CouponResult> {
   return { valid: true, discountPct, label, code: normalized }
 }
 
-// ─── Helpers ────────────────────────────────────────────────
+// ─── Plan icon map ────────────────────────────────────────────
+// Ícones SVG inline para corresponder ao visual do bolt.new
 
-function applyDiscount(price: number, discountPct: number): number {
-  return Math.max(0, price * (1 - discountPct / 100))
+function PlanIcon({ name }: { name: string }) {
+  const map: Record<string, { bg: string; icon: React.ReactNode }> = {
+    plano_profissional: {
+      bg: 'bg-green-500',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+        </svg>
+      ),
+    },
+    plano_fornecedor: {
+      bg: 'bg-orange-500',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+        </svg>
+      ),
+    },
+    plano_empresa: {
+      bg: 'bg-blue-600',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+          <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      ),
+    },
+    plano_fornecedor_empresa: {
+      bg: 'bg-blue-500',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+          <rect x="2" y="7" width="20" height="14" rx="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+        </svg>
+      ),
+    },
+    plano_empresa_prestadora: {
+      bg: 'bg-teal-500',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+          <rect x="1" y="3" width="15" height="13" /><polygon points="16 8 20 8 23 11 23 16 16 16 16 8" /><circle cx="5.5" cy="18.5" r="2.5" /><circle cx="18.5" cy="18.5" r="2.5" />
+        </svg>
+      ),
+    },
+  }
+
+  const config = map[name] ?? { bg: 'bg-slate-500', icon: null }
+
+  return (
+    <div className={cn('w-14 h-14 rounded-xl flex items-center justify-center shrink-0', config.bg)}>
+      {config.icon}
+    </div>
+  )
 }
 
 // ─── Plan Card ───────────────────────────────────────────────
@@ -81,98 +125,68 @@ function applyDiscount(price: number, discountPct: number): number {
 interface PlanCardProps {
   plan: SubscriptionPlan
   coupon: CouponResult | null
-  isHighlighted: boolean
   isLoading: boolean
   onSelect: (plan: SubscriptionPlan) => void
 }
 
-function PlanCard({ plan, coupon, isHighlighted, isLoading, onSelect }: PlanCardProps) {
-  const originalPrice = plan.price_yearly ?? 0
+function PlanCard({ plan, coupon, isLoading, onSelect }: PlanCardProps) {
+  const yearlyPrice = plan.price_yearly ?? 0
   const hasDiscount = coupon?.valid && coupon.discountPct > 0
-  const finalPrice = hasDiscount ? applyDiscount(originalPrice, coupon!.discountPct) : originalPrice
+  const finalPrice = hasDiscount ? Math.max(0, yearlyPrice * (1 - coupon!.discountPct / 100)) : yearlyPrice
+  const monthlyEquiv = finalPrice / 12
   const isLifetimeFree = hasDiscount && finalPrice === 0
 
   return (
-    <div
-      className={cn(
-        'relative flex flex-col rounded-2xl border-2 p-6 transition-all bg-white',
-        isHighlighted
-          ? 'border-primary-500 shadow-lg shadow-primary-100 scale-[1.02]'
-          : 'border-slate-200 hover:border-primary-300'
-      )}
-    >
-      {isHighlighted && (
-        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <span className="flex items-center gap-1 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-white shadow">
-            <Zap size={11} /> Recomendado
-          </span>
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md hover:border-primary-300 transition-all flex flex-col gap-4">
+      {/* Icon + Name */}
+      <div className="flex items-start gap-4">
+        <PlanIcon name={plan.name} />
+        <div className="min-w-0">
+          <h3 className="text-xl font-bold text-slate-900 leading-tight">{plan.display_name}</h3>
+          <p className="text-xs text-slate-400 mt-0.5 capitalize">{plan.display_name}</p>
+          <p className="text-sm text-slate-500 mt-1 leading-relaxed">{plan.description}</p>
         </div>
-      )}
-
-      {/* Nome do plano */}
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-slate-900">{plan.display_name}</h3>
-        {plan.description && (
-          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{plan.description}</p>
-        )}
       </div>
 
-      {/* Preço */}
-      <div className="mb-5">
+      {/* Divider */}
+      <div className="border-t border-slate-100" />
+
+      {/* Price */}
+      <div>
         {isLifetimeFree ? (
           <div>
             <p className="text-2xl font-black text-green-600">GRÁTIS PARA SEMPRE</p>
-            {originalPrice > 0 && (
-              <p className="text-sm text-slate-400 line-through mt-0.5">
-                R$ {originalPrice.toLocaleString('pt-BR')}/ano
+            {yearlyPrice > 0 && (
+              <p className="text-sm text-slate-400 line-through">
+                R$ {yearlyPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} /ano
               </p>
             )}
           </div>
         ) : (
           <div>
-            {hasDiscount && originalPrice > 0 && (
-              <p className="text-sm text-slate-400 line-through">
-                R$ {originalPrice.toLocaleString('pt-BR')}/ano
+            {hasDiscount && yearlyPrice > 0 && (
+              <p className="text-sm text-slate-400 line-through mb-0.5">
+                R$ {yearlyPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} /ano
               </p>
             )}
-            <div className="flex items-end gap-1">
-              <span className="text-sm text-slate-500 mb-1">R$</span>
-              <span className="text-3xl font-bold text-slate-900">
-                {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-              </span>
-              <span className="text-slate-500 text-sm mb-1">/ano</span>
-            </div>
-            {hasDiscount && coupon!.discountPct > 0 && finalPrice > 0 && (
-              <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 mt-1">
-                -{coupon!.discountPct}%
-              </span>
-            )}
+            <p className="text-2xl font-black text-primary-600">
+              R$ {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              <span className="text-base font-medium text-slate-500"> /ano</span>
+            </p>
+            <p className="text-sm text-slate-400 mt-0.5">
+              ou R$ {monthlyEquiv.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}/mês
+            </p>
           </div>
         )}
       </div>
-
-      {/* Features */}
-      <ul className="flex-1 space-y-2 mb-6">
-        {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2">
-            <Check size={14} className="mt-0.5 shrink-0 text-primary-500" />
-            <span className="text-sm text-slate-600">{feature}</span>
-          </li>
-        ))}
-      </ul>
 
       {/* CTA */}
       <Button
         onClick={() => onSelect(plan)}
         isLoading={isLoading}
-        variant={isHighlighted ? 'default' : 'outline'}
-        className={cn('w-full', isHighlighted && 'shadow-md')}
+        className="w-full mt-auto"
       >
-        {isLifetimeFree ? (
-          <><Gift size={15} /> Ativar grátis</>
-        ) : (
-          <>Assinar agora <ArrowRight size={15} /></>
-        )}
+        Começar agora <ArrowRight size={15} />
       </Button>
     </div>
   )
@@ -197,9 +211,9 @@ function CouponInput({ coupon, onApply, onRemove, loading }: CouponInputProps) {
   }
 
   return (
-    <div className="max-w-md mx-auto">
-      <p className="text-sm font-medium text-slate-600 mb-2 flex items-center gap-1.5">
-        <Tag size={14} className="text-primary-500" /> Tem um cupom?
+    <div className="bg-white rounded-2xl border border-slate-200 p-5 max-w-md mx-auto">
+      <p className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <Tag size={15} className="text-primary-500" /> Tem um cupom?
       </p>
 
       {coupon?.valid ? (
@@ -209,11 +223,7 @@ function CouponInput({ coupon, onApply, onRemove, loading }: CouponInputProps) {
             <span className="text-sm font-bold text-green-700">{coupon.code}</span>
             <span className="text-xs text-green-600 ml-2">— {coupon.label}</span>
           </div>
-          <button
-            onClick={onRemove}
-            className="text-green-400 hover:text-green-600 transition-colors"
-            title="Remover cupom"
-          >
+          <button onClick={onRemove} className="text-green-400 hover:text-green-600 transition-colors">
             <X size={16} />
           </button>
         </div>
@@ -224,15 +234,10 @@ function CouponInput({ coupon, onApply, onRemove, loading }: CouponInputProps) {
             value={value}
             onChange={(e) => setValue(e.target.value.toUpperCase())}
             onKeyDown={(e) => e.key === 'Enter' && handleApply()}
-            placeholder="Digite seu cupom"
-            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium tracking-wider placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition-all uppercase"
+            placeholder="DIGITE O CÓDIGO"
+            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium tracking-widest placeholder:text-slate-300 placeholder:tracking-widest focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition-all uppercase"
           />
-          <Button
-            onClick={handleApply}
-            isLoading={loading}
-            variant="outline"
-            className="px-5 shrink-0"
-          >
+          <Button onClick={handleApply} isLoading={loading} variant="outline" className="px-5 shrink-0">
             Aplicar
           </Button>
         </div>
@@ -249,7 +254,7 @@ function CouponInput({ coupon, onApply, onRemove, loading }: CouponInputProps) {
 
 export function PlanSelectionPage() {
   const navigate = useNavigate()
-  const { user, profile, signOut, fetchProfile } = useAuthStore()
+  const { user, fetchProfile } = useAuthStore()
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
   const [coupon, setCoupon] = useState<CouponResult | null>(null)
   const [couponLoading, setCouponLoading] = useState(false)
@@ -259,32 +264,20 @@ export function PlanSelectionPage() {
     queryFn: fetchAllPlans,
   })
 
-  // Qual plano corresponde ao tipo do usuário logado
-  const userPlanMap: Record<string, string> = {
-    profissional:       'plano_profissional',
-    fornecedor:         'plano_fornecedor',
-    empresa:            'plano_empresa',
-    fornecedor_empresa: 'plano_fornecedor_empresa',
-    empresa_prestadora: 'plano_empresa_prestadora',
-  }
-  const highlightedPlan = profile?.user_type ? (userPlanMap[profile.user_type] ?? '') : ''
-
   const handleApplyCoupon = async (code: string) => {
     setCouponLoading(true)
     try {
       const result = await validateCoupon(code)
       setCoupon(result)
-      if (result.valid) {
-        toast.success(`Cupom aplicado: ${result.label}`)
-      } else {
-        toast.error('Cupom inválido ou expirado.')
-      }
+      if (result.valid) toast.success(`Cupom aplicado: ${result.label}`)
+      else toast.error('Cupom inválido ou expirado.')
     } finally {
       setCouponLoading(false)
     }
   }
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
+    // Não está logado → vai para o cadastro
     if (!user) {
       navigate('/cadastro')
       return
@@ -293,23 +286,14 @@ export function PlanSelectionPage() {
     setLoadingPlanId(plan.id)
 
     try {
-      const isLifetimeFree =
-        coupon?.valid && coupon.discountPct === 100
+      const isLifetimeFree = coupon?.valid && coupon.discountPct === 100
 
       if (isLifetimeFree) {
-        // Cupom 100% — cria assinatura ativa sem pagamento
         await createFreeSubscription(user.id, plan.id)
         await fetchProfile(user.id)
-        toast.success('Plano ativado com cupom! Bem-vindo ao Visumo.')
-        navigate('/dashboard/home', { replace: true })
-      } else if ((plan.price_yearly ?? 0) === 0) {
-        // Plano gratuito
-        await createFreeSubscription(user.id, plan.id)
-        await fetchProfile(user.id)
-        toast.success('Plano gratuito ativado!')
+        toast.success('Plano ativado com cupom!')
         navigate('/dashboard/home', { replace: true })
       } else {
-        // Plano pago — redireciona para link PagBank
         const paymentLink = plan.payment_link_yearly
         if (paymentLink) {
           await createPendingSubscription(user.id, plan.id, 'yearly', plan.price_yearly ?? 0)
@@ -321,11 +305,7 @@ export function PlanSelectionPage() {
         }
       }
     } catch (err: unknown) {
-      const msg =
-        err instanceof Error
-          ? err.message
-          : (err as { message?: string })?.message ?? ''
-
+      const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? ''
       if (msg.includes('JWTExpired') || msg.includes('not authenticated')) {
         toast.error('Sessão expirada. Faça login novamente.')
         navigate('/login')
@@ -339,44 +319,31 @@ export function PlanSelectionPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">V</span>
-            </div>
-            <span className="font-bold text-primary-700 text-lg">Visumo</span>
-          </div>
-          {user && (
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-slate-500 hidden sm:block">
-                Olá, <strong className="text-slate-700">{profile?.full_name?.split(' ')[0] ?? 'usuário'}</strong>
-              </p>
-              <button
-                onClick={() => { signOut(); navigate('/login') }}
-                className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <LogOut size={14} /> Sair
-              </button>
-            </div>
-          )}
+      {/* Header simples */}
+      <header className="bg-white border-b border-slate-100 px-4 py-4">
+        <div className="max-w-5xl mx-auto flex items-center gap-3">
+          <Link
+            to="/"
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            <ChevronLeft size={16} /> Voltar
+          </Link>
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 py-12">
+      <div className="max-w-5xl mx-auto px-4 py-10">
         {/* Title */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-            Escolha seu plano
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2">
+            Escolha seu Plano
           </h1>
-          <p className="text-slate-500 text-base max-w-lg mx-auto">
-            Planos anuais acessíveis para cada perfil do setor de comunicação visual.
+          <p className="text-slate-500 text-base">
+            Selecione o tipo de perfil e veja o investimento anual
           </p>
         </div>
 
         {/* Coupon */}
-        <div className="mb-10">
+        <div className="mb-8">
           <CouponInput
             coupon={coupon}
             onApply={handleApplyCoupon}
@@ -391,13 +358,12 @@ export function PlanSelectionPage() {
             <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2">
             {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
                 coupon={coupon}
-                isHighlighted={plan.name === highlightedPlan}
                 isLoading={loadingPlanId === plan.id}
                 onSelect={handleSelectPlan}
               />
@@ -405,18 +371,17 @@ export function PlanSelectionPage() {
           </div>
         )}
 
-        {/* Footer note */}
-        <p className="text-center text-sm text-slate-400 mt-10">
-          Todos os planos incluem acesso completo à plataforma. Cobrança anual.
+        <p className="text-center text-xs text-slate-400 mt-8">
+          Você será direcionado para o pagamento e depois completará seu cadastro
         </p>
 
         {user && (
-          <div className="text-center mt-4">
+          <div className="text-center mt-3">
             <button
               onClick={() => navigate('/dashboard/home')}
               className="text-sm text-slate-400 hover:text-slate-600 underline underline-offset-2"
             >
-              Pular e ir para o painel →
+              Ir para o painel →
             </button>
           </div>
         )}

@@ -60,10 +60,10 @@ function Hero() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/cadastro"
+            to="/escolher-plano"
             className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 transition-colors shadow-lg shadow-primary-200 w-full sm:w-auto justify-center"
           >
-            Começar gratuitamente <ArrowRight size={18} />
+            Começar agora <ArrowRight size={18} />
           </Link>
           <Link
             to="/login"
@@ -142,10 +142,10 @@ function UserTypeCard({
         ))}
       </ul>
       <Link
-        to="/cadastro"
+        to="/escolher-plano"
         className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-600 hover:text-primary-700 group-hover:gap-2.5 transition-all"
       >
-        Cadastrar como {title.toLowerCase()} <ArrowRight size={14} />
+        Ver plano <ArrowRight size={14} />
       </Link>
     </div>
   )
@@ -338,10 +338,10 @@ function CTA() {
           comunicação visual do Brasil.
         </p>
         <Link
-          to="/cadastro"
+          to="/escolher-plano"
           className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-primary-600 text-white font-semibold text-lg hover:bg-primary-700 transition-colors shadow-xl shadow-primary-200"
         >
-          Criar conta grátis <ArrowRight size={20} />
+          Ver planos e começar <ArrowRight size={20} />
         </Link>
         <p className="text-xs text-slate-400 mt-4">Sem cartão de crédito. Cancele quando quiser.</p>
       </div>
