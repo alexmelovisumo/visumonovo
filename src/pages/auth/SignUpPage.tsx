@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Building2, Wrench, Package, Eye, EyeOff, ChevronLeft } from 'lucide-react'
+import { Building2, Wrench, Package, Eye, EyeOff, ChevronLeft, ShoppingBag, Layers } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
@@ -21,22 +21,34 @@ type Step = 1 | 2 | 3
 
 const userTypes = [
   {
-    type: 'empresa' as UserType,
-    icon: <Building2 size={28} />,
-    label: 'Empresa',
-    description: 'Quero publicar projetos e contratar profissionais',
-  },
-  {
     type: 'profissional' as UserType,
-    icon: <Wrench size={28} />,
+    icon: <Wrench size={24} />,
     label: 'Profissional',
     description: 'Quero encontrar projetos e oferecer meus serviços',
   },
   {
     type: 'fornecedor' as UserType,
-    icon: <Package size={28} />,
+    icon: <Package size={24} />,
     label: 'Fornecedor',
-    description: 'Quero divulgar materiais e serviços para o mercado',
+    description: 'Quero divulgar materiais e insumos para o setor',
+  },
+  {
+    type: 'empresa' as UserType,
+    icon: <Building2 size={24} />,
+    label: 'Empresa',
+    description: 'Quero publicar projetos e contratar profissionais',
+  },
+  {
+    type: 'fornecedor_empresa' as UserType,
+    icon: <ShoppingBag size={24} />,
+    label: 'Fornecedor/Empresa',
+    description: 'Forneço materiais e também contrato serviços',
+  },
+  {
+    type: 'empresa_prestadora' as UserType,
+    icon: <Layers size={24} />,
+    label: 'Empresa Prestadora',
+    description: 'Sou empresa e também presto serviços ao mercado',
   },
 ]
 
@@ -281,7 +293,10 @@ export function SignUpPage() {
 
                 <h1 className="text-xl font-bold text-slate-900 mb-1">Crie seu acesso</h1>
                 <p className="text-slate-500 text-sm mb-6">
-                  Conta do tipo: <strong className="text-primary-700 capitalize">{userType}</strong>
+                  Conta do tipo:{' '}
+                  <strong className="text-primary-700">
+                    {userTypes.find((u) => u.type === userType)?.label ?? userType}
+                  </strong>
                 </p>
 
                 <form
@@ -383,7 +398,9 @@ export function SignUpPage() {
                 >
                   <div className="space-y-1.5">
                     <Label htmlFor="full_name" required>
-                      {userType === 'empresa' ? 'Nome do responsável' : 'Seu nome completo'}
+                      {(userType === 'empresa' || userType === 'fornecedor_empresa' || userType === 'empresa_prestadora')
+                        ? 'Nome do responsável'
+                        : 'Seu nome completo'}
                     </Label>
                     <Input
                       id="full_name"
@@ -397,7 +414,7 @@ export function SignUpPage() {
                     )}
                   </div>
 
-                  {userType === 'empresa' && (
+                  {(userType === 'empresa' || userType === 'fornecedor_empresa' || userType === 'empresa_prestadora') && (
                     <div className="space-y-1.5">
                       <Label htmlFor="company_name">Nome da empresa</Label>
                       <Input

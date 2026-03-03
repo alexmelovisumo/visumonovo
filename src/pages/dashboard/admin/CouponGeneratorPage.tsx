@@ -30,7 +30,7 @@ const schema = z.object({
   value:                  z.string().min(1, 'Informe o valor'),
   max_uses:               z.string().optional(),
   valid_until:            z.string().optional(),
-  applicable_user_types:  z.array(z.enum(['empresa', 'profissional', 'fornecedor', 'admin'])).optional(),
+  applicable_user_types:  z.array(z.enum(['empresa', 'profissional', 'fornecedor', 'fornecedor_empresa', 'empresa_prestadora', 'admin'])).optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -86,7 +86,7 @@ function CreateCouponModal({ onClose }: { onClose: () => void }) {
     },
   })
 
-  const USER_TYPES: UserType[] = ['empresa', 'profissional', 'fornecedor']
+  const USER_TYPES: UserType[] = ['empresa', 'profissional', 'fornecedor', 'fornecedor_empresa', 'empresa_prestadora']
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">

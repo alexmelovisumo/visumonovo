@@ -30,10 +30,12 @@ export const BR_STATES = [
 ]
 
 export const USER_TYPE_LABELS = {
-  empresa: 'Empresa',
-  profissional: 'Profissional',
-  fornecedor: 'Fornecedor',
-  admin: 'Administrador',
+  empresa:            'Empresa',
+  profissional:       'Profissional',
+  fornecedor:         'Fornecedor',
+  fornecedor_empresa: 'Fornecedor/Empresa',
+  empresa_prestadora: 'Empresa Prestadora',
+  admin:              'Administrador',
 } as const
 
 export const PROJECT_STATUS_LABELS = {

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowRight, CheckCircle2, Building2, Wrench, Package,
   Search, Handshake, Star, ChevronRight, Zap,
+  ShoppingBag, Layers,
 } from 'lucide-react'
 
 // ─── Nav ──────────────────────────────────────────────────────
@@ -40,7 +41,7 @@ function Nav() {
 
 function Hero() {
   return (
-    <section className="pt-28 pb-20 px-4 sm:px-6 text-center bg-gradient-to-b from-primary-50 via-white to-white">
+    <section className="pt-28 pb-16 px-4 sm:px-6 text-center bg-gradient-to-b from-primary-50 via-white to-white">
       <div className="max-w-4xl mx-auto">
         <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
           <Zap size={12} />
@@ -72,7 +73,7 @@ function Hero() {
           </Link>
         </div>
 
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
+        <div className="mt-10 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-400">
           <div className="flex items-center gap-1.5">
             <CheckCircle2 size={14} className="text-green-500" />
             Cadastro gratuito
@@ -86,6 +87,29 @@ function Hero() {
             100% online
           </div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Stats ────────────────────────────────────────────────────
+
+function Stats() {
+  const stats = [
+    { value: '1.000+', label: 'Profissionais' },
+    { value: '500+',   label: 'Empresas' },
+    { value: '200+',   label: 'Fornecedores' },
+    { value: '2.500+', label: 'Projetos' },
+  ]
+  return (
+    <section className="py-10 px-4 bg-primary-600">
+      <div className="max-w-4xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+        {stats.map((s) => (
+          <div key={s.label}>
+            <p className="text-3xl font-black text-white">{s.value}</p>
+            <p className="text-sm font-medium text-primary-200 mt-0.5">{s.label}</p>
+          </div>
+        ))}
       </div>
     </section>
   )
@@ -128,53 +152,83 @@ function UserTypeCard({
 }
 
 function UserTypes() {
+  const types = [
+    {
+      icon: <Wrench size={24} className="text-amber-600" />,
+      title: 'Profissional',
+      subtitle: 'Presta serviços de comunicação visual',
+      color: 'bg-amber-50',
+      benefits: [
+        'Acesse projetos na sua região',
+        'Envie propostas detalhadas',
+        'Construa seu portfólio',
+        'Expanda sua cartela de clientes',
+      ],
+    },
+    {
+      icon: <Package size={24} className="text-green-600" />,
+      title: 'Fornecedor',
+      subtitle: 'Vende materiais e insumos para o setor',
+      color: 'bg-green-50',
+      benefits: [
+        'Catálogo de produtos online',
+        'Visibilidade para profissionais',
+        'Contato direto com compradores',
+        'Aumente suas vendas B2B',
+      ],
+    },
+    {
+      icon: <Building2 size={24} className="text-violet-600" />,
+      title: 'Empresa',
+      subtitle: 'Contrata serviços de comunicação visual',
+      color: 'bg-violet-50',
+      benefits: [
+        'Publique projetos gratuitamente',
+        'Receba propostas de profissionais',
+        'Gerencie negociações em um só lugar',
+        'Chat direto com os prestadores',
+      ],
+    },
+    {
+      icon: <ShoppingBag size={24} className="text-blue-600" />,
+      title: 'Fornecedor/Empresa',
+      subtitle: 'Fornece materiais e também contrata serviços',
+      color: 'bg-blue-50',
+      benefits: [
+        'Catálogo de produtos online',
+        'Publique e receba projetos',
+        'Acesso duplo: fornecedor + empresa',
+        'Máxima visibilidade na plataforma',
+      ],
+    },
+    {
+      icon: <Layers size={24} className="text-rose-600" />,
+      title: 'Empresa Prestadora',
+      subtitle: 'Empresa que também presta serviços ao mercado',
+      color: 'bg-rose-50',
+      benefits: [
+        'Publique e receba projetos',
+        'Envie e receba propostas',
+        'Perfil completo: empresa + prestador',
+        'Destaque máximo na busca',
+      ],
+    },
+  ]
+
   return (
     <section className="py-20 px-4 sm:px-6 bg-slate-50">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Para todos do setor</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Para quem é o Visumo?</h2>
           <p className="text-slate-500 text-lg max-w-xl mx-auto">
             Escolha o perfil que melhor descreve você e comece a usar hoje mesmo
           </p>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-3">
-          <UserTypeCard
-            icon={<Building2 size={24} className="text-violet-600" />}
-            title="Empresa"
-            subtitle="Precisa de serviços de comunicação visual"
-            color="bg-violet-50"
-            benefits={[
-              'Publique projetos gratuitamente',
-              'Receba propostas de profissionais',
-              'Gerencie negociações em um só lugar',
-              'Chat direto com os prestadores',
-            ]}
-          />
-          <UserTypeCard
-            icon={<Wrench size={24} className="text-amber-600" />}
-            title="Profissional"
-            subtitle="Presta serviços de comunicação visual"
-            color="bg-amber-50"
-            benefits={[
-              'Acesse projetos na sua região',
-              'Envie propostas detalhadas',
-              'Construa seu portfólio',
-              'Expanda sua cartela de clientes',
-            ]}
-          />
-          <UserTypeCard
-            icon={<Package size={24} className="text-green-600" />}
-            title="Fornecedor"
-            subtitle="Vende materiais e insumos para o setor"
-            color="bg-green-50"
-            benefits={[
-              'Catálogo de produtos online',
-              'Visibilidade para profissionais',
-              'Contato direto com compradores',
-              'Aumente suas vendas B2B',
-            ]}
-          />
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {types.map((t) => (
+            <UserTypeCard key={t.title} {...t} />
+          ))}
         </div>
       </div>
     </section>
@@ -244,7 +298,7 @@ function Features() {
   const features = [
     { title: 'Chat em tempo real', desc: 'Comunicação direta entre empresa e profissional após aceite da proposta.' },
     { title: 'Geolocalização', desc: 'Encontre profissionais e projetos próximos à sua região.' },
-    { title: 'Planos flexíveis', desc: 'Do gratuito ao profissional. Assine e desbloqueie mais recursos.' },
+    { title: 'Planos flexíveis', desc: 'Planos anuais acessíveis para cada tipo de usuário.' },
     { title: 'Catálogo de fornecedores', desc: 'Acesse materiais e insumos direto de quem fornece.' },
     { title: 'Dashboard completo', desc: 'Gerencie projetos, propostas e negociações em um painel centralizado.' },
     { title: 'Seguro e confiável', desc: 'Autenticação segura e controle de acesso por perfil de usuário.' },
@@ -254,7 +308,7 @@ function Features() {
     <section className="py-20 px-4 sm:px-6 bg-primary-950">
       <div className="max-w-5xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Tudo que você precisa</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Por que escolher o Visumo?</h2>
           <p className="text-primary-300 text-lg">Uma plataforma completa para o setor de comunicação visual</p>
         </div>
 
@@ -311,6 +365,7 @@ function Footer() {
           © {new Date().getFullYear()} Visumo. Todos os direitos reservados.
         </p>
         <div className="flex items-center gap-4 text-sm text-slate-400">
+          <Link to="/planos" className="hover:text-slate-600 transition-colors">Planos</Link>
           <Link to="/login" className="hover:text-slate-600 transition-colors">Entrar</Link>
           <Link to="/cadastro" className="hover:text-slate-600 transition-colors">Cadastrar</Link>
         </div>
@@ -326,6 +381,7 @@ export function LandingPage() {
     <div className="min-h-screen">
       <Nav />
       <Hero />
+      <Stats />
       <UserTypes />
       <HowItWorks />
       <Features />

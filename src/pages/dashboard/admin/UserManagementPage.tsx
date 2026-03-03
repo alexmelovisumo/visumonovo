@@ -12,13 +12,15 @@ import type { Profile, UserType, UserSubscription } from '@/types'
 
 type ProfileWithSub = Profile & { subscription?: Pick<UserSubscription, 'status' | 'plan'> & { plan?: { display_name: string } } }
 
-const USER_TYPES: UserType[] = ['empresa', 'profissional', 'fornecedor', 'admin']
+const USER_TYPES: UserType[] = ['empresa', 'profissional', 'fornecedor', 'fornecedor_empresa', 'empresa_prestadora', 'admin']
 
 const TYPE_COLORS: Record<UserType, string> = {
-  empresa:      'bg-violet-100 text-violet-700',
-  profissional: 'bg-amber-100 text-amber-700',
-  fornecedor:   'bg-green-100 text-green-700',
-  admin:        'bg-rose-100 text-rose-700',
+  empresa:            'bg-violet-100 text-violet-700',
+  profissional:       'bg-amber-100 text-amber-700',
+  fornecedor:         'bg-green-100 text-green-700',
+  fornecedor_empresa: 'bg-blue-100 text-blue-700',
+  empresa_prestadora: 'bg-rose-100 text-rose-700',
+  admin:              'bg-slate-200 text-slate-700',
 }
 
 const SUB_STATUS_COLORS: Record<string, string> = {

@@ -4,7 +4,7 @@
 
 // ─── Enums ──────────────────────────────────────────────────
 
-export type UserType = 'empresa' | 'profissional' | 'fornecedor' | 'admin'
+export type UserType = 'empresa' | 'profissional' | 'fornecedor' | 'fornecedor_empresa' | 'empresa_prestadora' | 'admin'
 
 export type ProjectStatus =
   | 'open'

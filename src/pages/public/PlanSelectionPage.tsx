@@ -1,111 +1,161 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Check, Zap, ArrowRight, LogOut } from 'lucide-react'
+import { Check, Zap, ArrowRight, LogOut, Tag, X, Gift } from 'lucide-react'
 import { toast } from 'sonner'
+import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
-import {
-  fetchPlansByUserType,
-  createFreeSubscription,
-  createPendingSubscription,
-} from '@/hooks/useSubscription'
+import { createFreeSubscription, createPendingSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/types'
 
+// ─── Fetch all active plans ───────────────────────────────────
+
+async function fetchAllPlans(): Promise<SubscriptionPlan[]> {
+  const { data, error } = await supabase
+    .from('subscription_plans')
+    .select('*')
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+
+  if (error) throw error
+  return (data ?? []) as SubscriptionPlan[]
+}
+
+// ─── Coupon validation ────────────────────────────────────────
+
+interface CouponResult {
+  valid: boolean
+  discountPct: number   // 0–100
+  label: string
+  code: string
+}
+
+async function validateCoupon(code: string): Promise<CouponResult> {
+  const normalized = code.trim().toUpperCase()
+
+  const { data } = await supabase
+    .from('coupons')
+    .select('*')
+    .eq('code', normalized)
+    .eq('is_active', true)
+    .maybeSingle()
+
+  if (!data) {
+    return { valid: false, discountPct: 0, label: '', code: normalized }
+  }
+
+  // Verifica expiração
+  if (data.valid_until && new Date(data.valid_until) < new Date()) {
+    return { valid: false, discountPct: 0, label: '', code: normalized }
+  }
+
+  // Verifica usos
+  if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+    return { valid: false, discountPct: 0, label: '', code: normalized }
+  }
+
+  let discountPct = 0
+  let label = ''
+
+  if (data.type === 'percentage') {
+    discountPct = data.value
+    label = `${data.value}% de desconto`
+  } else if (data.type === 'lifetime_free') {
+    discountPct = 100
+    label = 'GRÁTIS PARA SEMPRE'
+  }
+
+  return { valid: true, discountPct, label, code: normalized }
+}
+
 // ─── Helpers ────────────────────────────────────────────────
 
-function formatPrice(value: number) {
-  if (value === 0) return 'Grátis'
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-}
-
-function yearlySavings(monthly: number, yearly: number | null) {
-  if (!yearly || monthly === 0) return null
-  const pct = Math.round((1 - yearly / (monthly * 12)) * 100)
-  return pct > 0 ? pct : null
-}
-
-const POPULAR_PLANS: Record<string, string> = {
-  empresa:      'empresa_profissional',
-  profissional: 'profissional_basico',
-  fornecedor:   'fornecedor_basico',
+function applyDiscount(price: number, discountPct: number): number {
+  return Math.max(0, price * (1 - discountPct / 100))
 }
 
 // ─── Plan Card ───────────────────────────────────────────────
 
 interface PlanCardProps {
   plan: SubscriptionPlan
-  billing: 'monthly' | 'yearly'
-  isPopular: boolean
+  coupon: CouponResult | null
+  isHighlighted: boolean
   isLoading: boolean
   onSelect: (plan: SubscriptionPlan) => void
 }
 
-function PlanCard({ plan, billing, isPopular, isLoading, onSelect }: PlanCardProps) {
-  const isFree = plan.price_monthly === 0
-  const price = billing === 'yearly' && plan.price_yearly ? plan.price_yearly / 12 : plan.price_monthly
-  const savings = yearlySavings(plan.price_monthly, plan.price_yearly)
+function PlanCard({ plan, coupon, isHighlighted, isLoading, onSelect }: PlanCardProps) {
+  const originalPrice = plan.price_yearly ?? 0
+  const hasDiscount = coupon?.valid && coupon.discountPct > 0
+  const finalPrice = hasDiscount ? applyDiscount(originalPrice, coupon!.discountPct) : originalPrice
+  const isLifetimeFree = hasDiscount && finalPrice === 0
 
   return (
     <div
       className={cn(
-        'relative flex flex-col rounded-2xl border-2 p-6 transition-all',
-        isPopular
-          ? 'border-primary-500 shadow-lg shadow-primary-100 bg-white scale-[1.02]'
-          : 'border-slate-200 bg-white hover:border-primary-300'
+        'relative flex flex-col rounded-2xl border-2 p-6 transition-all bg-white',
+        isHighlighted
+          ? 'border-primary-500 shadow-lg shadow-primary-100 scale-[1.02]'
+          : 'border-slate-200 hover:border-primary-300'
       )}
     >
-      {/* Popular badge */}
-      {isPopular && (
+      {isHighlighted && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
           <span className="flex items-center gap-1 rounded-full bg-primary-600 px-3 py-1 text-xs font-semibold text-white shadow">
-            <Zap size={11} /> Mais popular
+            <Zap size={11} /> Recomendado
           </span>
         </div>
       )}
 
-      {/* Plan name */}
+      {/* Nome do plano */}
       <div className="mb-4">
         <h3 className="text-lg font-bold text-slate-900">{plan.display_name}</h3>
         {plan.description && (
-          <p className="text-sm text-slate-500 mt-0.5">{plan.description}</p>
+          <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{plan.description}</p>
         )}
       </div>
 
-      {/* Price */}
+      {/* Preço */}
       <div className="mb-5">
-        {isFree ? (
-          <p className="text-3xl font-bold text-slate-900">Grátis</p>
+        {isLifetimeFree ? (
+          <div>
+            <p className="text-2xl font-black text-green-600">GRÁTIS PARA SEMPRE</p>
+            {originalPrice > 0 && (
+              <p className="text-sm text-slate-400 line-through mt-0.5">
+                R$ {originalPrice.toLocaleString('pt-BR')}/ano
+              </p>
+            )}
+          </div>
         ) : (
           <div>
+            {hasDiscount && originalPrice > 0 && (
+              <p className="text-sm text-slate-400 line-through">
+                R$ {originalPrice.toLocaleString('pt-BR')}/ano
+              </p>
+            )}
             <div className="flex items-end gap-1">
               <span className="text-sm text-slate-500 mb-1">R$</span>
               <span className="text-3xl font-bold text-slate-900">
-                {price.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                {finalPrice.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
               </span>
-              <span className="text-slate-500 text-sm mb-1">/mês</span>
+              <span className="text-slate-500 text-sm mb-1">/ano</span>
             </div>
-            {billing === 'yearly' && plan.price_yearly && (
-              <p className="text-xs text-slate-500 mt-0.5">
-                {formatPrice(plan.price_yearly)}/ano
-                {savings && (
-                  <span className="ml-1.5 inline-flex items-center rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-medium text-green-700">
-                    -{savings}%
-                  </span>
-                )}
-              </p>
+            {hasDiscount && coupon!.discountPct > 0 && finalPrice > 0 && (
+              <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 mt-1">
+                -{coupon!.discountPct}%
+              </span>
             )}
           </div>
         )}
       </div>
 
       {/* Features */}
-      <ul className="flex-1 space-y-2.5 mb-6">
+      <ul className="flex-1 space-y-2 mb-6">
         {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5">
-            <Check size={15} className="mt-0.5 shrink-0 text-primary-500" />
+          <li key={feature} className="flex items-start gap-2">
+            <Check size={14} className="mt-0.5 shrink-0 text-primary-500" />
             <span className="text-sm text-slate-600">{feature}</span>
           </li>
         ))}
@@ -115,12 +165,82 @@ function PlanCard({ plan, billing, isPopular, isLoading, onSelect }: PlanCardPro
       <Button
         onClick={() => onSelect(plan)}
         isLoading={isLoading}
-        variant={isPopular ? 'default' : isFree ? 'outline' : 'outline'}
-        className={cn('w-full', isPopular && 'shadow-md')}
+        variant={isHighlighted ? 'default' : 'outline'}
+        className={cn('w-full', isHighlighted && 'shadow-md')}
       >
-        {isFree ? 'Começar grátis' : 'Assinar agora'}
-        {!isFree && <ArrowRight size={16} />}
+        {isLifetimeFree ? (
+          <><Gift size={15} /> Ativar grátis</>
+        ) : (
+          <>Assinar agora <ArrowRight size={15} /></>
+        )}
       </Button>
+    </div>
+  )
+}
+
+// ─── Coupon Input ─────────────────────────────────────────────
+
+interface CouponInputProps {
+  coupon: CouponResult | null
+  onApply: (code: string) => Promise<void>
+  onRemove: () => void
+  loading: boolean
+}
+
+function CouponInput({ coupon, onApply, onRemove, loading }: CouponInputProps) {
+  const [value, setValue] = useState('')
+
+  const handleApply = async () => {
+    if (!value.trim()) return
+    await onApply(value)
+    setValue('')
+  }
+
+  return (
+    <div className="max-w-md mx-auto">
+      <p className="text-sm font-medium text-slate-600 mb-2 flex items-center gap-1.5">
+        <Tag size={14} className="text-primary-500" /> Tem um cupom?
+      </p>
+
+      {coupon?.valid ? (
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+          <Check size={16} className="text-green-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-bold text-green-700">{coupon.code}</span>
+            <span className="text-xs text-green-600 ml-2">— {coupon.label}</span>
+          </div>
+          <button
+            onClick={onRemove}
+            className="text-green-400 hover:text-green-600 transition-colors"
+            title="Remover cupom"
+          >
+            <X size={16} />
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === 'Enter' && handleApply()}
+            placeholder="Digite seu cupom"
+            className="flex-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium tracking-wider placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-primary-400 transition-all uppercase"
+          />
+          <Button
+            onClick={handleApply}
+            isLoading={loading}
+            variant="outline"
+            className="px-5 shrink-0"
+          >
+            Aplicar
+          </Button>
+        </div>
+      )}
+
+      {coupon !== null && !coupon.valid && (
+        <p className="text-xs text-red-500 mt-1.5">Cupom inválido ou expirado.</p>
+      )}
     </div>
   )
 }
@@ -130,18 +250,39 @@ function PlanCard({ plan, billing, isPopular, isLoading, onSelect }: PlanCardPro
 export function PlanSelectionPage() {
   const navigate = useNavigate()
   const { user, profile, signOut, fetchProfile } = useAuthStore()
-  const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly')
   const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null)
-
-  const userType = profile?.user_type ?? 'empresa'
+  const [coupon, setCoupon] = useState<CouponResult | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
 
   const { data: plans = [], isLoading } = useQuery({
-    queryKey: ['plans', userType],
-    queryFn:  () => fetchPlansByUserType(userType),
-    enabled:  true,
+    queryKey: ['plans-all'],
+    queryFn: fetchAllPlans,
   })
 
-  const popularPlanName = POPULAR_PLANS[userType] ?? ''
+  // Qual plano corresponde ao tipo do usuário logado
+  const userPlanMap: Record<string, string> = {
+    profissional:       'plano_profissional',
+    fornecedor:         'plano_fornecedor',
+    empresa:            'plano_empresa',
+    fornecedor_empresa: 'plano_fornecedor_empresa',
+    empresa_prestadora: 'plano_empresa_prestadora',
+  }
+  const highlightedPlan = profile?.user_type ? (userPlanMap[profile.user_type] ?? '') : ''
+
+  const handleApplyCoupon = async (code: string) => {
+    setCouponLoading(true)
+    try {
+      const result = await validateCoupon(code)
+      setCoupon(result)
+      if (result.valid) {
+        toast.success(`Cupom aplicado: ${result.label}`)
+      } else {
+        toast.error('Cupom inválido ou expirado.')
+      }
+    } finally {
+      setCouponLoading(false)
+    }
+  }
 
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
     if (!user) {
@@ -152,30 +293,39 @@ export function PlanSelectionPage() {
     setLoadingPlanId(plan.id)
 
     try {
-      if (plan.price_monthly === 0) {
+      const isLifetimeFree =
+        coupon?.valid && coupon.discountPct === 100
+
+      if (isLifetimeFree) {
+        // Cupom 100% — cria assinatura ativa sem pagamento
         await createFreeSubscription(user.id, plan.id)
-        await fetchProfile(user.id)   // garante profile carregado no store
+        await fetchProfile(user.id)
+        toast.success('Plano ativado com cupom! Bem-vindo ao Visumo.')
+        navigate('/dashboard/home', { replace: true })
+      } else if ((plan.price_yearly ?? 0) === 0) {
+        // Plano gratuito
+        await createFreeSubscription(user.id, plan.id)
+        await fetchProfile(user.id)
         toast.success('Plano gratuito ativado!')
         navigate('/dashboard/home', { replace: true })
       } else {
-        const price = billing === 'yearly' && plan.price_yearly
-          ? plan.price_yearly / 12
-          : plan.price_monthly
-        await createPendingSubscription(user.id, plan.id, billing, price)
-        await fetchProfile(user.id)   // garante profile carregado no store
-        toast.info('Assinatura criada. Complete o pagamento.')
-        navigate('/dashboard/aguardando-pagamento', { replace: true })
+        // Plano pago — redireciona para link PagBank
+        const paymentLink = plan.payment_link_yearly
+        if (paymentLink) {
+          await createPendingSubscription(user.id, plan.id, 'yearly', plan.price_yearly ?? 0)
+          await fetchProfile(user.id)
+          window.location.href = paymentLink
+        } else {
+          toast.info('Assinatura criada. Complete o pagamento.')
+          navigate('/dashboard/aguardando-pagamento', { replace: true })
+        }
       }
     } catch (err: unknown) {
-      // Supabase retorna PostgrestError (não é instância de Error padrão)
       const msg =
         err instanceof Error
           ? err.message
           : (err as { message?: string })?.message ?? ''
 
-      console.error('Erro ao selecionar plano:', err)
-
-      // Só redireciona para login se a sessão realmente expirou
       if (msg.includes('JWTExpired') || msg.includes('not authenticated')) {
         toast.error('Sessão expirada. Faça login novamente.')
         navigate('/login')
@@ -185,12 +335,6 @@ export function PlanSelectionPage() {
     } finally {
       setLoadingPlanId(null)
     }
-  }
-
-  const userTypeLabels: Record<string, string> = {
-    empresa:      'Empresa',
-    profissional: 'Profissional',
-    fornecedor:   'Fornecedor',
   }
 
   return (
@@ -222,50 +366,23 @@ export function PlanSelectionPage() {
 
       <div className="max-w-6xl mx-auto px-4 py-12">
         {/* Title */}
-        <div className="text-center mb-10">
-          <Badge variant="default" className="mb-3">
-            Planos para {userTypeLabels[userType] ?? 'você'}
-          </Badge>
+        <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
-            Escolha o plano ideal
+            Escolha seu plano
           </h1>
           <p className="text-slate-500 text-base max-w-lg mx-auto">
-            Comece gratuitamente e faça upgrade quando precisar de mais recursos.
+            Planos anuais acessíveis para cada perfil do setor de comunicação visual.
           </p>
+        </div>
 
-          {/* Billing toggle */}
-          {plans.some((p) => p.price_yearly) && (
-            <div className="flex items-center justify-center gap-3 mt-6">
-              <button
-                onClick={() => setBilling('monthly')}
-                className={cn(
-                  'px-4 py-2 rounded-full text-sm font-medium transition-all',
-                  billing === 'monthly'
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                )}
-              >
-                Mensal
-              </button>
-              <button
-                onClick={() => setBilling('yearly')}
-                className={cn(
-                  'flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all',
-                  billing === 'yearly'
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700'
-                )}
-              >
-                Anual
-                <span className={cn(
-                  'rounded-full px-1.5 py-0.5 text-xs font-semibold',
-                  billing === 'yearly' ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
-                )}>
-                  -25%
-                </span>
-              </button>
-            </div>
-          )}
+        {/* Coupon */}
+        <div className="mb-10">
+          <CouponInput
+            coupon={coupon}
+            onApply={handleApplyCoupon}
+            onRemove={() => setCoupon(null)}
+            loading={couponLoading}
+          />
         </div>
 
         {/* Plans grid */}
@@ -274,22 +391,13 @@ export function PlanSelectionPage() {
             <div className="w-10 h-10 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : (
-          <div
-            className={cn(
-              'grid gap-5',
-              plans.length <= 3
-                ? 'sm:grid-cols-2 lg:grid-cols-3'
-                : plans.length === 4
-                  ? 'sm:grid-cols-2 lg:grid-cols-4'
-                  : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
-            )}
-          >
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {plans.map((plan) => (
               <PlanCard
                 key={plan.id}
                 plan={plan}
-                billing={billing}
-                isPopular={plan.name === popularPlanName}
+                coupon={coupon}
+                isHighlighted={plan.name === highlightedPlan}
                 isLoading={loadingPlanId === plan.id}
                 onSelect={handleSelectPlan}
               />
@@ -299,10 +407,9 @@ export function PlanSelectionPage() {
 
         {/* Footer note */}
         <p className="text-center text-sm text-slate-400 mt-10">
-          Todos os planos incluem acesso à plataforma. Cancele a qualquer momento.
+          Todos os planos incluem acesso completo à plataforma. Cobrança anual.
         </p>
 
-        {/* Skip link (already logged in, has subscription) */}
         {user && (
           <div className="text-center mt-4">
             <button
