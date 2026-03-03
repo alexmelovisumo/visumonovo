@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, UserCheck, UserX, ChevronDown } from 'lucide-react'
+import { Search, UserCheck, UserX, ChevronDown, BadgeCheck, ShieldOff } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -36,11 +36,13 @@ const SUB_STATUS_COLORS: Record<string, string> = {
 function RowActions({
   user,
   onToggleActive,
+  onToggleVerify,
   onChangeType,
   loading,
 }: {
   user: ProfileWithSub
   onToggleActive: () => void
+  onToggleVerify: () => void
   onChangeType: (type: UserType) => void
   loading: boolean
 }) {
@@ -69,6 +71,15 @@ function RowActions({
               {user.is_active
                 ? <><UserX size={14} className="text-rose-500" /> Desativar conta</>
                 : <><UserCheck size={14} className="text-green-600" /> Ativar conta</>
+              }
+            </button>
+            <button
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
+              onClick={() => { onToggleVerify(); setOpen(false) }}
+            >
+              {user.is_verified
+                ? <><ShieldOff size={14} className="text-slate-500" /> Revogar verificação</>
+                : <><BadgeCheck size={14} className="text-blue-600" /> Verificar perfil</>
               }
             </button>
             <div className="border-t border-slate-100 my-1" />
@@ -205,7 +216,12 @@ export function UserManagementPage() {
                           {(u.full_name ?? u.email)[0].toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-slate-900 truncate">{u.full_name ?? '—'}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium text-slate-900 truncate">{u.full_name ?? '—'}</p>
+                            {u.is_verified && (
+                              <BadgeCheck size={14} className="text-blue-500 shrink-0" />
+                            )}
+                          </div>
                           <p className="text-xs text-slate-400 truncate">{u.email}</p>
                         </div>
                       </div>
@@ -242,6 +258,10 @@ export function UserManagementPage() {
                         onToggleActive={() => {
                           setLoadingId(u.id)
                           updateUser.mutate({ id: u.id, patch: { is_active: !u.is_active } })
+                        }}
+                        onToggleVerify={() => {
+                          setLoadingId(u.id)
+                          updateUser.mutate({ id: u.id, patch: { is_verified: !u.is_verified } })
                         }}
                         onChangeType={(type) => {
                           setLoadingId(u.id)

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, MapPin, Star, UserCircle, ChevronLeft } from 'lucide-react'
+import { Search, MapPin, Star, UserCircle, ChevronLeft, BadgeCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { USER_TYPE_LABELS, SPECIALTIES } from '@/utils/constants'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
@@ -92,7 +92,14 @@ function ProfessionalCard({ prof }: { prof: ProfessionalWithRating }) {
           </div>
         )}
         <div className="min-w-0">
-          <p className="font-bold text-slate-900 truncate">{prof.full_name ?? '—'}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-bold text-slate-900 truncate">{prof.full_name ?? '—'}</p>
+            {prof.is_verified && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-full text-[10px] font-semibold shrink-0">
+                <BadgeCheck size={10} /> Verificado
+              </span>
+            )}
+          </div>
           <p className="text-xs text-primary-600 font-medium">
             {USER_TYPE_LABELS[prof.user_type]}
           </p>
@@ -158,6 +165,7 @@ export function ProfessionalsListPage() {
   const [filterState, setFilterState] = useState('')
   const [filterType, setFilterType] = useState('')
   const [filterSpecialty, setFilterSpecialty] = useState('')
+  const [onlyVerified, setOnlyVerified] = useState(false)
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ['professionals-list'],
@@ -175,8 +183,9 @@ export function ProfessionalsListPage() {
     const matchesState     = !filterState     || p.state === filterState
     const matchesType      = !filterType      || p.user_type === filterType
     const matchesSpecialty = !filterSpecialty || (p.specialties ?? []).includes(filterSpecialty)
+    const matchesVerified  = !onlyVerified    || p.is_verified
 
-    return matchesSearch && matchesState && matchesType && matchesSpecialty
+    return matchesSearch && matchesState && matchesType && matchesSpecialty && matchesVerified
   })
 
   return (
@@ -236,6 +245,17 @@ export function ProfessionalsListPage() {
             <option key={s} value={s}>{s}</option>
           ))}
         </select>
+        <button
+          onClick={() => setOnlyVerified((v) => !v)}
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all shrink-0 ${
+            onlyVerified
+              ? 'bg-blue-600 text-white border-blue-600'
+              : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:text-blue-600'
+          }`}
+        >
+          <BadgeCheck size={15} />
+          Verificados
+        </button>
       </div>
 
       {/* Results */}

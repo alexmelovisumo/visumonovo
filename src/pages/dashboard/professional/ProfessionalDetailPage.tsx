@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import {
   ChevronLeft, MapPin, Star, Globe, Linkedin, Phone,
-  MessageCircle, Image as ImageIcon, UserCircle,
+  MessageCircle, Image as ImageIcon, UserCircle, BadgeCheck,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -151,7 +151,14 @@ export function ProfessionalDetailPage() {
           )}
 
           <div className="flex-1 min-w-0">
-            <p className="text-xl font-bold text-slate-900">{prof.full_name ?? prof.email}</p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xl font-bold text-slate-900">{prof.full_name ?? prof.email}</p>
+              {prof.is_verified && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-full text-xs font-semibold">
+                  <BadgeCheck size={12} /> Verificado
+                </span>
+              )}
+            </div>
             <p className="text-sm font-medium text-primary-600 mt-0.5">
               {USER_TYPE_LABELS[prof.user_type]}
             </p>

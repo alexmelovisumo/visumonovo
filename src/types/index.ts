@@ -54,6 +54,7 @@ export interface Profile {
   coverage_radius_km: number | null
   coverage_cities: string[] | null
   specialties: string[]
+  is_verified: boolean
   is_active: boolean
   created_at: string
   updated_at: string

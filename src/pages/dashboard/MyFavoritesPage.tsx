@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Heart, User, Briefcase, MapPin, Star, ChevronLeft } from 'lucide-react'
+import { Heart, User, Briefcase, MapPin, Star, ChevronLeft, BadgeCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useFavorites } from '@/hooks/useFavorites'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
@@ -19,6 +19,7 @@ interface FavProfessional {
   state: string | null
   user_type: string
   specialties: string[]
+  is_verified: boolean
   avg_rating: number
   review_count: number
 }
@@ -79,7 +80,14 @@ function FavProfCard({ prof }: { prof: FavProfessional }) {
           </div>
         )}
         <div className="min-w-0">
-          <p className="font-bold text-slate-900 truncate">{prof.full_name ?? '—'}</p>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-bold text-slate-900 truncate">{prof.full_name ?? '—'}</p>
+            {prof.is_verified && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-full text-[10px] font-semibold shrink-0">
+                <BadgeCheck size={10} /> Verificado
+              </span>
+            )}
+          </div>
           {prof.review_count > 0 && (
             <div className="flex items-center gap-1.5 mt-0.5">
               <Stars rating={prof.avg_rating} />
@@ -185,7 +193,7 @@ export function MyFavoritesPage() {
       if (profIds.length === 0) return []
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, profile_image_url, bio, city, state, user_type, specialties')
+        .select('id, full_name, avatar_url, profile_image_url, bio, city, state, user_type, specialties, is_verified')
         .in('id', profIds)
       if (error) throw error
 
