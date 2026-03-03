@@ -10,6 +10,7 @@ import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { cn } from '@/lib/utils'
+import { SearchBar } from '@/components/common/SearchBar'
 import type { Notification } from '@/types'
 
 // ─── Notification icon by type ────────────────────────────────
@@ -214,8 +215,13 @@ export function TopBar({ onMenuClick }: TopBarProps) {
         <span className="text-lg font-bold text-primary-600">Visumo</span>
       </Link>
 
+      {/* Center: search (desktop) */}
+      <div className="flex-1 flex justify-center px-4">
+        <SearchBar />
+      </div>
+
       {/* Right: notifications + user menu */}
-      <div className="flex items-center gap-2 ml-auto">
+      <div className="flex items-center gap-2">
 
         {/* Bell */}
         <div ref={bellRef} className="relative">
