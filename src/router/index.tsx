@@ -30,9 +30,11 @@ import { EditProjectPage } from '@/pages/dashboard/company/EditProjectPage'
 import { ProjectsListPage } from '@/pages/dashboard/professional/ProjectsListPage'
 import { NegotiationsPage } from '@/pages/dashboard/professional/NegotiationsPage'
 import { ManageProjectsPage } from '@/pages/dashboard/professional/ManageProjectsPage'
+import { ProfessionalsListPage } from '@/pages/dashboard/professional/ProfessionalsListPage'
 
 // ─── Supplier Pages ───────────────────────────────────────────
 import { ManageProductsPage } from '@/pages/dashboard/supplier/ManageProductsPage'
+import { SuppliersListPage } from '@/pages/dashboard/supplier/SuppliersListPage'
 
 // ─── Subscription Pages ───────────────────────────────────────
 import { PaymentPendingPage } from '@/pages/dashboard/PaymentPendingPage'
@@ -95,9 +97,11 @@ export const router = createBrowserRouter([
       { path: 'projetos', element: <ProjectsListPage /> },
       { path: 'negociacoes', element: <NegotiationsPage /> },
       { path: 'gerenciar-projetos', element: <ManageProjectsPage /> },
+      { path: 'profissionais', element: <ProfessionalsListPage /> },
 
       // Supplier
       { path: 'produtos', element: <ManageProductsPage /> },
+      { path: 'fornecedores', element: <SuppliersListPage /> },
 
       // Admin (only user_type = 'admin')
       {

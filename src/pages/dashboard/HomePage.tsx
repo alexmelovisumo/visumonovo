@@ -242,6 +242,20 @@ function EmpresaHome({ name }: { name: string }) {
             description="Gerencie todos os seus projetos"
             color="bg-blue-50"
           />
+          <QuickAction
+            to="/dashboard/profissionais"
+            icon={<Search size={20} className="text-green-600" />}
+            label="Encontrar profissionais"
+            description="Veja perfis de profissionais"
+            color="bg-green-50"
+          />
+          <QuickAction
+            to="/dashboard/fornecedores"
+            icon={<Package size={20} className="text-violet-600" />}
+            label="Catálogo de fornecedores"
+            description="Materiais e insumos"
+            color="bg-violet-50"
+          />
         </div>
       </div>
     </div>
@@ -311,6 +325,98 @@ function ProfissionalHome({ name }: { name: string }) {
             description="Acompanhe suas propostas enviadas"
             color="bg-blue-50"
           />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Fornecedor/Empresa Home ─────────────────────────────────
+
+function FornecedorEmpresaHome({ name }: { name: string }) {
+  const { user } = useAuthStore()
+
+  const { data: stats } = useQuery({
+    queryKey: ['forn-empresa-stats', user?.id],
+    queryFn: async () => {
+      const [products, projects] = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact' }).eq('supplier_id', user!.id).eq('is_active', true),
+        supabase.from('projects').select('id, status', { count: 'exact' }).eq('client_id', user!.id),
+      ])
+      return {
+        products: products.count ?? 0,
+        total: projects.count ?? 0,
+        open: (projects.data ?? []).filter(p => p.status === 'open').length,
+      }
+    },
+    enabled: !!user?.id,
+  })
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Olá, {name}! 👋</h1>
+        <p className="text-slate-500 text-sm mt-1">Gerencie produtos e projetos em um só lugar.</p>
+      </div>
+      <SubscriptionBanner />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard label="Produtos ativos" value={stats?.products ?? 0} icon={<Package size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/produtos" />
+        <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
+        <StatCard label="Projetos abertos" value={stats?.open ?? 0} icon={<Eye size={22} className="text-green-600" />} color="bg-green-50" to="/dashboard/meus-projetos" />
+      </div>
+      <div>
+        <h2 className="text-base font-semibold text-slate-800 mb-3">Ações rápidas</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <QuickAction to="/dashboard/produtos" icon={<Package size={20} className="text-primary-600" />} label="Meus produtos" description="Gerencie seu catálogo de produtos" color="bg-primary-50" />
+          <QuickAction to="/dashboard/criar-projeto" icon={<PlusCircle size={20} className="text-blue-600" />} label="Criar projeto" description="Publique um projeto para contratar" color="bg-blue-50" />
+          <QuickAction to="/dashboard/meus-projetos" icon={<FolderOpen size={20} className="text-violet-600" />} label="Meus projetos" description="Acompanhe seus projetos publicados" color="bg-violet-50" />
+          <QuickAction to="/dashboard/profissionais" icon={<Search size={20} className="text-green-600" />} label="Profissionais" description="Encontre profissionais para contratar" color="bg-green-50" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Empresa Prestadora Home ──────────────────────────────────
+
+function EmpresaPrestadoraHome({ name }: { name: string }) {
+  const { user } = useAuthStore()
+
+  const { data: stats } = useQuery({
+    queryKey: ['emp-prest-stats', user?.id],
+    queryFn: async () => {
+      const [myProjects, proposals] = await Promise.all([
+        supabase.from('projects').select('id, status', { count: 'exact' }).eq('client_id', user!.id),
+        supabase.from('proposals').select('id', { count: 'exact' }).eq('professional_id', user!.id),
+      ])
+      return {
+        total: myProjects.count ?? 0,
+        open: (myProjects.data ?? []).filter(p => p.status === 'open').length,
+        proposals: proposals.count ?? 0,
+      }
+    },
+    enabled: !!user?.id,
+  })
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900">Olá, {name}! 👋</h1>
+        <p className="text-slate-500 text-sm mt-1">Publique projetos e também envie propostas.</p>
+      </div>
+      <SubscriptionBanner />
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+        <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/meus-projetos" />
+        <StatCard label="Projetos abertos" value={stats?.open ?? 0} icon={<Eye size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
+        <StatCard label="Propostas enviadas" value={stats?.proposals ?? 0} icon={<MessageSquare size={22} className="text-violet-600" />} color="bg-violet-50" to="/dashboard/negociacoes" />
+      </div>
+      <div>
+        <h2 className="text-base font-semibold text-slate-800 mb-3">Ações rápidas</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <QuickAction to="/dashboard/criar-projeto" icon={<PlusCircle size={20} className="text-primary-600" />} label="Criar projeto" description="Publique um projeto para contratar" color="bg-primary-50" />
+          <QuickAction to="/dashboard/projetos" icon={<Search size={20} className="text-blue-600" />} label="Buscar projetos" description="Encontre projetos para propor serviços" color="bg-blue-50" />
+          <QuickAction to="/dashboard/meus-projetos" icon={<FolderOpen size={20} className="text-violet-600" />} label="Meus projetos" description="Acompanhe projetos publicados" color="bg-violet-50" />
+          <QuickAction to="/dashboard/negociacoes" icon={<Handshake size={20} className="text-green-600" />} label="Minhas propostas" description="Acompanhe propostas enviadas" color="bg-green-50" />
         </div>
       </div>
     </div>
@@ -402,10 +508,12 @@ export function HomePage() {
   const firstName = profile?.full_name?.split(' ')[0] ?? 'usuário'
 
   switch (profile?.user_type) {
-    case 'empresa':      return <EmpresaHome name={firstName} />
-    case 'profissional': return <ProfissionalHome name={firstName} />
-    case 'fornecedor':   return <FornecedorHome name={firstName} />
-    case 'admin':        return <AdminHome name={firstName} />
+    case 'empresa':              return <EmpresaHome name={firstName} />
+    case 'profissional':         return <ProfissionalHome name={firstName} />
+    case 'fornecedor':           return <FornecedorHome name={firstName} />
+    case 'fornecedor_empresa':   return <FornecedorEmpresaHome name={firstName} />
+    case 'empresa_prestadora':   return <EmpresaPrestadoraHome name={firstName} />
+    case 'admin':                return <AdminHome name={firstName} />
     default:
       return (
         <div className="flex items-center justify-center h-64">
