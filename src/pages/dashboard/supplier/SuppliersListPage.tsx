@@ -109,7 +109,12 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
 
         <div className="flex items-center gap-1.5 text-xs text-slate-500 border-t border-slate-100 pt-2 mt-auto">
           <Store size={11} />
-          <span className="font-medium truncate">{product.supplier?.full_name ?? '—'}</span>
+          <Link
+            to={`/dashboard/fornecedor/${product.supplier_id}`}
+            className="font-medium truncate hover:text-primary-600 hover:underline transition-colors"
+          >
+            {product.supplier?.full_name ?? '—'}
+          </Link>
           {product.supplier?.city && (
             <span className="text-slate-400 truncate">· {product.supplier.city}/{product.supplier.state}</span>
           )}
@@ -135,27 +140,36 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
+type SortOption = 'newest' | 'price_asc' | 'price_desc'
+
 export function SuppliersListPage() {
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('Todos')
+  const [sort, setSort]         = useState<SortOption>('newest')
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['suppliers-catalog'],
     queryFn: fetchProducts,
   })
 
-  const filtered = products.filter((p) => {
-    const term = search.toLowerCase()
-    const matchesSearch =
-      !search ||
-      p.name.toLowerCase().includes(term) ||
-      (p.description ?? '').toLowerCase().includes(term) ||
-      (p.supplier?.full_name ?? '').toLowerCase().includes(term)
+  const filtered = products
+    .filter((p) => {
+      const term = search.toLowerCase()
+      const matchesSearch =
+        !search ||
+        p.name.toLowerCase().includes(term) ||
+        (p.description ?? '').toLowerCase().includes(term) ||
+        (p.supplier?.full_name ?? '').toLowerCase().includes(term)
 
-    const matchesCategory = category === 'Todos' || p.category === category
+      const matchesCategory = category === 'Todos' || p.category === category
 
-    return matchesSearch && matchesCategory
-  })
+      return matchesSearch && matchesCategory
+    })
+    .sort((a, b) => {
+      if (sort === 'price_asc') return (a.price ?? Infinity) - (b.price ?? Infinity)
+      if (sort === 'price_desc') return (b.price ?? -Infinity) - (a.price ?? -Infinity)
+      return 0 // newest: already ordered by DB
+    })
 
   return (
     <div className="space-y-6">
@@ -193,6 +207,15 @@ export function SuppliersListPage() {
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
+        </select>
+        <select
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortOption)}
+          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+        >
+          <option value="newest">Mais recentes</option>
+          <option value="price_asc">Menor preço</option>
+          <option value="price_desc">Maior preço</option>
         </select>
       </div>
 

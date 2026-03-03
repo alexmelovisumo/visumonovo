@@ -36,6 +36,7 @@ import { ProfessionalDetailPage } from '@/pages/dashboard/professional/Professio
 // ─── Supplier Pages ───────────────────────────────────────────
 import { ManageProductsPage } from '@/pages/dashboard/supplier/ManageProductsPage'
 import { SuppliersListPage } from '@/pages/dashboard/supplier/SuppliersListPage'
+import { SupplierDetailPage } from '@/pages/dashboard/supplier/SupplierDetailPage'
 
 // ─── Subscription Pages ───────────────────────────────────────
 import { PaymentPendingPage } from '@/pages/dashboard/PaymentPendingPage'
@@ -104,6 +105,7 @@ export const router = createBrowserRouter([
       // Supplier
       { path: 'produtos', element: <ManageProductsPage /> },
       { path: 'fornecedores', element: <SuppliersListPage /> },
+      { path: 'fornecedor/:id', element: <SupplierDetailPage /> },
 
       // Admin (only user_type = 'admin')
       {
