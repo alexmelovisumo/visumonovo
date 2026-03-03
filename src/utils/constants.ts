@@ -60,3 +60,24 @@ export const SUBSCRIPTION_STATUS_LABELS = {
   cancelled: 'Cancelado',
   expired: 'Expirado',
 } as const
+
+export const SPECIALTIES = [
+  'Comunicação Visual',
+  'Design Gráfico',
+  'Identidade Visual',
+  'Branding',
+  'Impressão Digital',
+  'Plotagem',
+  'Sinalização',
+  'Lettering',
+  'Fachadas',
+  'Adesivos Vinílicos',
+  'Banners e Lonas',
+  'Letreiros Luminosos',
+  'Displays e Expositores',
+  'Stands e Cenografia',
+  'Fotografia',
+  'Vídeo e Motion',
+  'Ilustração',
+  'Web Design',
+] as const

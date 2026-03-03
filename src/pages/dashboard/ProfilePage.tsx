@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { USER_TYPE_LABELS } from '@/utils/constants'
+import { USER_TYPE_LABELS, SPECIALTIES } from '@/utils/constants'
 import type { PortfolioImage } from '@/types'
 
 // ─── Schema ──────────────────────────────────────────────────
@@ -241,6 +241,12 @@ export function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.profile_image_url ?? null)
   const [geoSaving, setGeoSaving] = useState(false)
   const [geoSaved, setGeoSaved] = useState(false)
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>(profile?.specialties ?? [])
+
+  const toggleSpecialty = (s: string) =>
+    setSelectedSpecialties((prev) =>
+      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
+    )
 
   const captureLocation = () => {
     if (!navigator.geolocation) { toast.error('Geolocalização não suportada neste navegador'); return }
@@ -292,6 +298,7 @@ export function ProfilePage() {
         state:              data.state || null,
         postal_code:        data.postal_code || null,
         coverage_radius_km: data.coverage_radius_km ? parseInt(data.coverage_radius_km) : null,
+        specialties:        isProfissional ? selectedSpecialties : [],
         profile_image_url:  avatarUrl,
         updated_at:         new Date().toISOString(),
       }
@@ -432,6 +439,33 @@ export function ProfilePage() {
                 placeholder="Ex: 50"
                 {...register('coverage_radius_km')}
               />
+            </div>
+          )}
+
+          {/* Especialidades (profissionais) */}
+          {isProfissional && (
+            <div className="space-y-2">
+              <Label>Especialidades</Label>
+              <div className="flex flex-wrap gap-2">
+                {SPECIALTIES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSpecialty(s)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-full text-xs font-medium border transition-all',
+                      selectedSpecialties.includes(s)
+                        ? 'bg-primary-600 text-white border-primary-600'
+                        : 'bg-white text-slate-600 border-slate-300 hover:border-primary-400 hover:text-primary-600'
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              {selectedSpecialties.length > 0 && (
+                <p className="text-xs text-slate-400">{selectedSpecialties.length} especialidade{selectedSpecialties.length !== 1 ? 's' : ''} selecionada{selectedSpecialties.length !== 1 ? 's' : ''}</p>
+              )}
             </div>
           )}
 

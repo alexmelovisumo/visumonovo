@@ -53,6 +53,7 @@ export interface Profile {
   longitude: number | null
   coverage_radius_km: number | null
   coverage_cities: string[] | null
+  specialties: string[]
   is_active: boolean
   created_at: string
   updated_at: string

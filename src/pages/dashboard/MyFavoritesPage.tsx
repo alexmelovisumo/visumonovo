@@ -18,6 +18,7 @@ interface FavProfessional {
   city: string | null
   state: string | null
   user_type: string
+  specialties: string[]
   avg_rating: number
   review_count: number
 }
@@ -89,6 +90,21 @@ function FavProfCard({ prof }: { prof: FavProfessional }) {
       </Link>
 
       {prof.bio && <p className="text-sm text-slate-500 line-clamp-2">{prof.bio}</p>}
+
+      {prof.specialties?.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {prof.specialties.slice(0, 3).map((s) => (
+            <span key={s} className="px-2 py-0.5 bg-primary-50 text-primary-700 text-[10px] font-medium rounded-full border border-primary-100">
+              {s}
+            </span>
+          ))}
+          {prof.specialties.length > 3 && (
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-medium rounded-full">
+              +{prof.specialties.length - 3}
+            </span>
+          )}
+        </div>
+      )}
 
       {(prof.city || prof.state) && (
         <div className="flex items-center gap-1.5 text-xs text-slate-400">
@@ -169,7 +185,7 @@ export function MyFavoritesPage() {
       if (profIds.length === 0) return []
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, avatar_url, profile_image_url, bio, city, state, user_type')
+        .select('id, full_name, avatar_url, profile_image_url, bio, city, state, user_type, specialties')
         .in('id', profIds)
       if (error) throw error
 

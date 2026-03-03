@@ -173,6 +173,23 @@ export function ProfessionalDetailPage() {
           </p>
         )}
 
+        {/* Specialties */}
+        {prof.specialties?.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-slate-100">
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Especialidades</p>
+            <div className="flex flex-wrap gap-1.5">
+              {prof.specialties.map((s) => (
+                <span
+                  key={s}
+                  className="px-2.5 py-1 bg-primary-50 text-primary-700 text-xs font-medium rounded-full border border-primary-100"
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Links */}
         <div className="flex flex-wrap gap-3 mt-4">
           {prof.website && (

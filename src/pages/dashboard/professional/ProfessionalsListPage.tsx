@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Search, MapPin, Star, UserCircle, ChevronLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import { USER_TYPE_LABELS } from '@/utils/constants'
+import { USER_TYPE_LABELS, SPECIALTIES } from '@/utils/constants'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
 import type { Profile } from '@/types'
 
@@ -123,6 +123,22 @@ function ProfessionalCard({ prof }: { prof: ProfessionalWithRating }) {
         </div>
       )}
 
+      {/* Specialties */}
+      {prof.specialties?.length > 0 && (
+        <div className="flex flex-wrap gap-1">
+          {prof.specialties.slice(0, 4).map((s) => (
+            <span key={s} className="px-2 py-0.5 bg-primary-50 text-primary-700 text-[10px] font-medium rounded-full border border-primary-100">
+              {s}
+            </span>
+          ))}
+          {prof.specialties.length > 4 && (
+            <span className="px-2 py-0.5 bg-slate-100 text-slate-500 text-[10px] font-medium rounded-full">
+              +{prof.specialties.length - 4}
+            </span>
+          )}
+        </div>
+      )}
+
       <span className="mt-auto text-xs font-semibold text-primary-600 self-start">
         Ver perfil completo →
       </span>
@@ -141,6 +157,7 @@ export function ProfessionalsListPage() {
   const [search, setSearch] = useState('')
   const [filterState, setFilterState] = useState('')
   const [filterType, setFilterType] = useState('')
+  const [filterSpecialty, setFilterSpecialty] = useState('')
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ['professionals-list'],
@@ -155,10 +172,11 @@ export function ProfessionalsListPage() {
       (p.bio ?? '').toLowerCase().includes(term) ||
       (p.city ?? '').toLowerCase().includes(term)
 
-    const matchesState = !filterState || p.state === filterState
-    const matchesType  = !filterType  || p.user_type === filterType
+    const matchesState     = !filterState     || p.state === filterState
+    const matchesType      = !filterType      || p.user_type === filterType
+    const matchesSpecialty = !filterSpecialty || (p.specialties ?? []).includes(filterSpecialty)
 
-    return matchesSearch && matchesState && matchesType
+    return matchesSearch && matchesState && matchesType && matchesSpecialty
   })
 
   return (
@@ -207,6 +225,16 @@ export function ProfessionalsListPage() {
           <option value="">Todos os tipos</option>
           <option value="profissional">Profissional</option>
           <option value="empresa_prestadora">Empresa Prestadora</option>
+        </select>
+        <select
+          value={filterSpecialty}
+          onChange={(e) => setFilterSpecialty(e.target.value)}
+          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+        >
+          <option value="">Todas especialidades</option>
+          {SPECIALTIES.map((s) => (
+            <option key={s} value={s}>{s}</option>
+          ))}
         </select>
       </div>
 
