@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Search, MapPin, Star, UserCircle, ChevronLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { USER_TYPE_LABELS } from '@/utils/constants'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 import type { Profile } from '@/types'
 
 // ─── Types ────────────────────────────────────────────────────
@@ -71,8 +72,12 @@ function ProfessionalCard({ prof }: { prof: ProfessionalWithRating }) {
   return (
     <Link
       to={`/dashboard/profissional/${prof.id}`}
-      className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md hover:border-primary-300 transition-all flex flex-col gap-3"
+      className="bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md hover:border-primary-300 transition-all flex flex-col gap-3 relative"
     >
+      <div className="absolute top-3 right-3">
+        <FavoriteButton entityType="professional" entityId={prof.id} />
+      </div>
+
       {/* Avatar + Name */}
       <div className="flex items-center gap-3">
         {prof.profile_image_url ? (

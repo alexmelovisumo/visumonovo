@@ -20,6 +20,7 @@ import {
   Settings,
   MessageSquare,
   Store,
+  Heart,
   X,
 } from 'lucide-react'
 
@@ -58,6 +59,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const commonItems: NavItem[] = [
     { label: 'Início', path: '/dashboard/home', icon: <LayoutDashboard size={18} /> },
     { label: 'Mensagens', path: '/dashboard/mensagens', icon: <MessageSquare size={18} />, badge: unreadCount || undefined },
+    { label: 'Favoritos', path: '/dashboard/favoritos', icon: <Heart size={18} /> },
     { label: 'Meu Perfil', path: '/dashboard/perfil', icon: <User size={18} /> },
     { label: 'Localização', path: '/dashboard/localizacao', icon: <MapPin size={18} /> },
     { label: 'Assinatura', path: '/dashboard/renovar-assinatura', icon: <CreditCard size={18} /> },

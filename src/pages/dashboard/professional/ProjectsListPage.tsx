@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { BR_STATES } from '@/utils/constants'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 import type { Project, ProjectCategory } from '@/types'
 
 type ProjectWithCats = Omit<Project, 'categories'> & {
@@ -39,9 +40,12 @@ function ProjectCard({ project }: { project: ProjectWithCats }) {
         <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-primary-700 transition-colors flex-1">
           {project.title}
         </h3>
-        <span className="shrink-0 text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
-          Aberto
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <FavoriteButton entityType="project" entityId={project.id} size={14} />
+          <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-700">
+            Aberto
+          </span>
+        </div>
       </div>
 
       {categories.length > 0 && (

@@ -19,6 +19,7 @@ import { PlanSelectionPage } from '@/pages/public/PlanSelectionPage'
 import { HomePage } from '@/pages/dashboard/HomePage'
 import { ProfilePage } from '@/pages/dashboard/ProfilePage'
 import { LocationSetupPage } from '@/pages/dashboard/LocationSetupPage'
+import { MyFavoritesPage } from '@/pages/dashboard/MyFavoritesPage'
 
 // ─── Company Pages ────────────────────────────────────────────
 import { CreateProjectPage } from '@/pages/dashboard/company/CreateProjectPage'
@@ -84,6 +85,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="/dashboard/home" replace /> },
       { path: 'home', element: <HomePage /> },
       { path: 'perfil', element: <ProfilePage /> },
+      { path: 'favoritos', element: <MyFavoritesPage /> },
       { path: 'localizacao', element: <LocationSetupPage /> },
       { path: 'aguardando-pagamento', element: <PaymentPendingPage /> },
       { path: 'renovar-assinatura', element: <RenewSubscriptionPage /> },
