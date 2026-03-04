@@ -316,6 +316,36 @@ export interface Notification {
   created_at: string
 }
 
+// ─── Quote System ────────────────────────────────────────────
+
+export type QuoteStatus = 'pending' | 'responded' | 'closed'
+
+export interface QuoteRequest {
+  id: string
+  requester_id: string
+  supplier_id: string
+  product_id: string | null
+  product_title: string | null
+  message: string
+  quantity: string | null
+  status: QuoteStatus
+  created_at: string
+  updated_at: string
+  // Relations
+  requester?: Profile
+  supplier?: Profile
+  response?: QuoteResponse
+}
+
+export interface QuoteResponse {
+  id: string
+  quote_request_id: string
+  unit_price: number | null
+  message: string
+  estimated_days: number | null
+  created_at: string
+}
+
 // ─── Admin ───────────────────────────────────────────────────
 
 export interface AdminStats {

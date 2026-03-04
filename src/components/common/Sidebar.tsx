@@ -23,6 +23,7 @@ import {
   Store,
   Heart,
   X,
+  ClipboardList,
 } from 'lucide-react'
 
 interface NavItem {
@@ -72,6 +73,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
     { label: 'Mapa de Profissionais', path: '/dashboard/profissionais/mapa', icon: <Map size={18} /> },
     { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
   ]
 
   const professionalItems: NavItem[] = [
@@ -79,10 +81,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} /> },
     { label: 'Meus Projetos', path: '/dashboard/gerenciar-projetos', icon: <ListChecks size={18} /> },
     { label: 'Estatísticas', path: '/dashboard/estatisticas', icon: <BarChart2 size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
   ]
 
   const supplierItems: NavItem[] = [
     { label: 'Meus Produtos', path: '/dashboard/produtos', icon: <Package size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
   ]
 
   const adminItems: NavItem[] = [

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   ChevronLeft,
   MapPin,
@@ -11,7 +11,9 @@ import {
   Search,
   Tag,
   MessageCircle,
+  FileText,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -39,6 +41,95 @@ interface SupplierProduct {
   category: string | null
   image_url: string | null
   is_active: boolean
+}
+
+// ─── Quote Modal ──────────────────────────────────────────────
+
+function QuoteModal({
+  supplierId,
+  requesterId,
+  product,
+  onClose,
+}: {
+  supplierId: string
+  requesterId: string
+  product: { id: string; title: string } | null
+  onClose: () => void
+}) {
+  const [message,  setMessage]  = useState('')
+  const [quantity, setQuantity] = useState('')
+
+  const send = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('quote_requests').insert({
+        requester_id:  requesterId,
+        supplier_id:   supplierId,
+        product_id:    product?.id ?? null,
+        product_title: product?.title ?? null,
+        message:       message.trim(),
+        quantity:      quantity.trim() || null,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast.success('Cotação enviada! O fornecedor responderá em breve.')
+      onClose()
+    },
+    onError: () => toast.error('Erro ao enviar cotação.'),
+  })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+        <div className="p-5 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900">Solicitar cotação</h3>
+          {product && (
+            <p className="text-sm text-slate-500 mt-0.5">Produto: <strong>{product.title}</strong></p>
+          )}
+        </div>
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">
+              Descreva o que você precisa *
+            </label>
+            <textarea
+              className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary-500"
+              rows={4}
+              placeholder="Ex: Preciso de 50 banners 3×1m em lona com impressão digital frente e verso..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-slate-600 mb-1.5 block">
+              Quantidade / metragem (opcional)
+            </label>
+            <input
+              className="w-full h-10 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="Ex: 50 unidades, 100m², etc."
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="p-5 border-t border-slate-100 flex gap-3">
+          <button
+            className="flex-1 h-10 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="flex-1 h-10 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
+            disabled={message.trim().length < 10 || send.isPending}
+            onClick={() => send.mutate()}
+          >
+            {send.isPending ? 'Enviando...' : 'Enviar cotação'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Fetch ────────────────────────────────────────────────────
@@ -71,9 +162,11 @@ async function fetchSupplierProducts(supplierId: string): Promise<SupplierProduc
 function ProductCard({
   product,
   supplier,
+  onQuote,
 }: {
   product: SupplierProduct
   supplier: SupplierProfile
+  onQuote: (product: { id: string; title: string }) => void
 }) {
   const handleContact = () => {
     const phone = supplier.phone?.replace(/\D/g, '')
@@ -125,13 +218,22 @@ function ProductCard({
           </p>
         )}
 
-        <button
-          onClick={handleContact}
-          className="mt-1 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors"
-        >
-          <MessageCircle size={15} />
-          Entrar em contato
-        </button>
+        <div className="mt-1 flex flex-col gap-2">
+          <button
+            onClick={() => onQuote({ id: product.id, title: product.title })}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors"
+          >
+            <FileText size={15} />
+            Solicitar cotação
+          </button>
+          <button
+            onClick={handleContact}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+          >
+            <MessageCircle size={14} />
+            Contato direto
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -141,8 +243,10 @@ function ProductCard({
 
 export function SupplierDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuthStore()
+  const { user, profile } = useAuthStore()
   const [search, setSearch] = useState('')
+  const [quoteProduct, setQuoteProduct] = useState<{ id: string; title: string } | null | false>(false)
+  // false = closed, null = general quote, { id, title } = product quote
 
   const { data: supplier, isLoading: loadingSupplier } = useQuery({
     queryKey: ['supplier-profile', id],
@@ -198,6 +302,16 @@ export function SupplierDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Quote Modal */}
+      {quoteProduct !== false && user && profile && (
+        <QuoteModal
+          supplierId={id!}
+          requesterId={user.id}
+          product={quoteProduct}
+          onClose={() => setQuoteProduct(false)}
+        />
+      )}
+
       {/* Header nav */}
       <div className="flex items-center gap-3">
         <Link
@@ -254,6 +368,13 @@ export function SupplierDetailPage() {
             {/* Contact buttons */}
             {canContact && (
               <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setQuoteProduct(null)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors"
+                >
+                  <FileText size={14} />
+                  Solicitar cotação
+                </button>
                 {whatsappUrl && (
                   <a
                     href={whatsappUrl}
@@ -319,7 +440,12 @@ export function SupplierDetailPage() {
             </p>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} supplier={supplier} />
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  supplier={supplier}
+                  onQuote={setQuoteProduct}
+                />
               ))}
             </div>
           </>
