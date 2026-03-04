@@ -5,6 +5,7 @@ import {
   PlusCircle, Search, FolderOpen, Handshake,
   Package, AlertCircle, CheckCircle2, Clock,
   TrendingUp, Eye, MessageSquare, ArrowRight,
+  MapPin, BadgeCheck, Users, Briefcase,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription, getDaysUntilExpiry } from '@/hooks/useSubscription'
@@ -258,6 +259,26 @@ function EmpresaHome({ name }: { name: string }) {
           />
         </div>
       </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Briefcase size={16} className="text-primary-500" /> Projetos recentes
+          </h2>
+          <Link to="/dashboard/meus-projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <RecentProjectsFeed />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Users size={16} className="text-primary-500" /> Profissionais em destaque
+          </h2>
+          <Link to="/dashboard/profissionais" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <FeaturedProfessionals />
+      </div>
     </div>
   )
 }
@@ -270,13 +291,16 @@ function ProfissionalHome({ name }: { name: string }) {
   const { data: stats } = useQuery({
     queryKey: ['prof-stats', user?.id],
     queryFn: async () => {
-      const [proposals, active] = await Promise.all([
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+      const [proposals, active, views] = await Promise.all([
         supabase.from('proposals').select('id', { count: 'exact' }).eq('professional_id', user!.id),
         supabase.from('proposals').select('id', { count: 'exact' }).eq('professional_id', user!.id).eq('status', 'accepted'),
+        supabase.from('profile_views').select('id', { count: 'exact' }).eq('profile_id', user!.id).gte('viewed_at', cutoff),
       ])
       return {
         proposals: proposals.count ?? 0,
         accepted:  active.count ?? 0,
+        views30d:  views.count ?? 0,
       }
     },
     enabled: !!user?.id,
@@ -291,7 +315,7 @@ function ProfissionalHome({ name }: { name: string }) {
 
       <SubscriptionBanner />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Propostas enviadas"
           value={stats?.proposals ?? 0}
@@ -305,6 +329,13 @@ function ProfissionalHome({ name }: { name: string }) {
           icon={<CheckCircle2 size={22} className="text-green-600" />}
           color="bg-green-50"
           to="/dashboard/gerenciar-projetos"
+        />
+        <StatCard
+          label="Visualizações (30d)"
+          value={stats?.views30d ?? 0}
+          icon={<Eye size={22} className="text-blue-600" />}
+          color="bg-blue-50"
+          to="/dashboard/estatisticas"
         />
       </div>
 
@@ -326,6 +357,16 @@ function ProfissionalHome({ name }: { name: string }) {
             color="bg-blue-50"
           />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Briefcase size={16} className="text-primary-500" /> Projetos abertos
+          </h2>
+          <Link to="/dashboard/projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <RecentProjectsFeed />
       </div>
     </div>
   )
@@ -373,6 +414,26 @@ function FornecedorEmpresaHome({ name }: { name: string }) {
           <QuickAction to="/dashboard/profissionais" icon={<Search size={20} className="text-green-600" />} label="Profissionais" description="Encontre profissionais para contratar" color="bg-green-50" />
         </div>
       </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Briefcase size={16} className="text-primary-500" /> Projetos recentes
+          </h2>
+          <Link to="/dashboard/meus-projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <RecentProjectsFeed />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Users size={16} className="text-primary-500" /> Profissionais em destaque
+          </h2>
+          <Link to="/dashboard/profissionais" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <FeaturedProfessionals />
+      </div>
     </div>
   )
 }
@@ -418,6 +479,16 @@ function EmpresaPrestadoraHome({ name }: { name: string }) {
           <QuickAction to="/dashboard/meus-projetos" icon={<FolderOpen size={20} className="text-violet-600" />} label="Meus projetos" description="Acompanhe projetos publicados" color="bg-violet-50" />
           <QuickAction to="/dashboard/negociacoes" icon={<Handshake size={20} className="text-green-600" />} label="Minhas propostas" description="Acompanhe propostas enviadas" color="bg-green-50" />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Briefcase size={16} className="text-primary-500" /> Projetos abertos
+          </h2>
+          <Link to="/dashboard/projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+        </div>
+        <RecentProjectsFeed />
       </div>
     </div>
   )
@@ -470,6 +541,172 @@ function FornecedorHome({ name }: { name: string }) {
           color="bg-primary-50"
         />
       </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Briefcase size={16} className="text-primary-500" /> Projetos abertos
+          </h2>
+          <Link to="/dashboard/projetos" className="text-xs text-primary-600 hover:underline">Ver projetos →</Link>
+        </div>
+        <RecentProjectsFeed />
+      </div>
+    </div>
+  )
+}
+
+// ─── Recent Projects Feed ─────────────────────────────────────
+
+interface FeedProject {
+  id: string
+  title: string
+  description: string
+  city: string | null
+  state: string | null
+  budget_min: number | null
+  budget_max: number | null
+  created_at: string
+}
+
+function formatBudget(min: number | null, max: number | null) {
+  if (!min && !max) return null
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  if (min && max) return `${fmt(min)} – ${fmt(max)}`
+  if (min) return `A partir de ${fmt(min)}`
+  return `Até ${fmt(max!)}`
+}
+
+function RecentProjectsFeed() {
+  const { data: projects = [], isLoading } = useQuery({
+    queryKey: ['recent-projects-feed'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, title, description, city, state, budget_min, budget_max, created_at')
+        .eq('status', 'open')
+        .order('created_at', { ascending: false })
+        .limit(6)
+      if (error) throw error
+      return (data ?? []) as FeedProject[]
+    },
+    staleTime: 60_000,
+  })
+
+  if (isLoading) return (
+    <div className="flex justify-center py-8">
+      <div className="w-6 h-6 border-3 border-primary-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  if (projects.length === 0) return (
+    <p className="text-sm text-slate-400 text-center py-6">Nenhum projeto aberto no momento.</p>
+  )
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {projects.map((p) => {
+        const budget = formatBudget(p.budget_min, p.budget_max)
+        return (
+          <Link
+            key={p.id}
+            to={`/dashboard/projeto/${p.id}`}
+            className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-primary-300 transition-all flex flex-col gap-2"
+          >
+            <p className="font-semibold text-slate-900 text-sm leading-snug line-clamp-2">{p.title}</p>
+            <p className="text-xs text-slate-500 line-clamp-1">{p.description}</p>
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-auto">
+              {(p.city || p.state) && (
+                <span className="flex items-center gap-1">
+                  <MapPin size={10} /> {[p.city, p.state].filter(Boolean).join('/')}
+                </span>
+              )}
+              {budget && <span className="text-primary-600 font-medium">{budget}</span>}
+            </div>
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── Featured Professionals Feed ──────────────────────────────
+
+interface FeedProfessional {
+  id: string
+  full_name: string | null
+  profile_image_url: string | null
+  avatar_url: string | null
+  bio: string | null
+  city: string | null
+  state: string | null
+  user_type: string
+  is_verified: boolean
+  specialties: string[]
+}
+
+function FeaturedProfessionals() {
+  const { data: profs = [], isLoading } = useQuery({
+    queryKey: ['featured-professionals-feed'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, profile_image_url, avatar_url, bio, city, state, user_type, is_verified, specialties')
+        .in('user_type', ['profissional', 'empresa_prestadora'])
+        .eq('is_active', true)
+        .order('is_verified', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(6)
+      if (error) throw error
+      return (data ?? []) as FeedProfessional[]
+    },
+    staleTime: 60_000,
+  })
+
+  if (isLoading) return (
+    <div className="flex justify-center py-8">
+      <div className="w-6 h-6 border-3 border-primary-600 border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+
+  if (profs.length === 0) return (
+    <p className="text-sm text-slate-400 text-center py-6">Nenhum profissional cadastrado ainda.</p>
+  )
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {profs.map((p) => {
+        const initials = (p.full_name ?? '?').split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+        const avatar = p.profile_image_url ?? p.avatar_url
+        return (
+          <Link
+            key={p.id}
+            to={`/dashboard/profissional/${p.id}`}
+            className="bg-white rounded-xl border border-slate-200 p-4 hover:shadow-md hover:border-primary-300 transition-all flex items-center gap-3"
+          >
+            {avatar ? (
+              <img src={avatar} alt={p.full_name ?? ''} className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center shrink-0">
+                <span className="text-primary-700 text-xs font-bold">{initials}</span>
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1 flex-wrap">
+                <p className="font-semibold text-slate-900 text-sm truncate">{p.full_name ?? '—'}</p>
+                {p.is_verified && <BadgeCheck size={12} className="text-blue-500 shrink-0" />}
+              </div>
+              {(p.city || p.state) && (
+                <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
+                  <MapPin size={9} /> {[p.city, p.state].filter(Boolean).join(', ')}
+                </p>
+              )}
+              {p.specialties?.length > 0 && (
+                <p className="text-[10px] text-primary-600 mt-0.5 truncate">{p.specialties.slice(0, 2).join(' · ')}</p>
+              )}
+            </div>
+          </Link>
+        )
+      })}
     </div>
   )
 }
