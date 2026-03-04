@@ -96,6 +96,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Planos', path: '/dashboard/admin/planos', icon: <CreditCard size={18} /> },
     { label: 'Categorias', path: '/dashboard/admin/categorias', icon: <Settings size={18} /> },
     { label: 'Pagamentos', path: '/dashboard/admin/pagamentos', icon: <BarChart3 size={18} /> },
+    { label: 'Relatórios', path: '/dashboard/admin/relatorios', icon: <ClipboardList size={18} /> },
   ]
 
   const getTypeItems = (): NavItem[] => {

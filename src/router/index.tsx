@@ -55,6 +55,7 @@ import { CouponGeneratorPage } from '@/pages/dashboard/admin/CouponGeneratorPage
 import { PlanManagementPage } from '@/pages/dashboard/admin/PlanManagementPage'
 import { CategoryManagementPage } from '@/pages/dashboard/admin/CategoryManagementPage'
 import { PaymentLogsPage } from '@/pages/dashboard/admin/PaymentLogsPage'
+import { AdminReportsPage } from '@/pages/dashboard/admin/AdminReportsPage'
 
 // ─── Router ───────────────────────────────────────────────────
 
@@ -125,6 +126,7 @@ export const router = createBrowserRouter([
           { path: 'admin/planos', element: <PlanManagementPage /> },
           { path: 'admin/categorias', element: <CategoryManagementPage /> },
           { path: 'admin/pagamentos', element: <PaymentLogsPage /> },
+          { path: 'admin/relatorios', element: <AdminReportsPage /> },
         ],
       },
     ],

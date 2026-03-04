@@ -1,12 +1,22 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search } from 'lucide-react'
+import { Search, Download } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
 import { Input } from '@/components/ui/input'
 import { USER_TYPE_LABELS, SUBSCRIPTION_STATUS_LABELS } from '@/utils/constants'
 import type { UserSubscription, SubscriptionStatus } from '@/types'
+
+function downloadCsv(filename: string, headers: string[], rows: (string | number | null | undefined)[][]) {
+  const esc = (v: string | number | null | undefined) => `"${String(v ?? '').replace(/"/g, '""')}"`
+  const csv = [headers, ...rows].map((r) => r.map(esc).join(',')).join('\r\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
 
 type SubWithUser = UserSubscription & {
   user: { email: string; full_name: string | null; user_type: string }
@@ -66,16 +76,47 @@ export function PaymentLogsPage() {
     .filter((s) => s.status === 'active')
     .reduce((acc, s) => acc + (s.current_price ?? 0), 0)
 
+  function handleExport() {
+    downloadCsv(
+      `visumo-assinaturas-${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      ['Nome', 'E-mail', 'Tipo', 'Plano', 'Status', 'Ciclo', 'Valor (R$)', 'Desconto (%)', 'Cupom', 'Início', 'Vencimento'],
+      filtered.map((s) => [
+        s.user?.full_name,
+        s.user?.email,
+        USER_TYPE_LABELS[s.user?.user_type as keyof typeof USER_TYPE_LABELS] ?? s.user?.user_type,
+        s.plan?.display_name,
+        SUBSCRIPTION_STATUS_LABELS[s.status],
+        s.billing_cycle === 'monthly' ? 'Mensal' : 'Anual',
+        s.current_price?.toFixed(2).replace('.', ','),
+        s.discount_applied,
+        s.coupon_code,
+        s.subscription_start_date ? format(new Date(s.subscription_start_date), 'dd/MM/yyyy', { locale: ptBR }) : '',
+        s.subscription_end_date   ? format(new Date(s.subscription_end_date),   'dd/MM/yyyy', { locale: ptBR })
+        : s.trial_end_date        ? format(new Date(s.trial_end_date),           'dd/MM/yyyy', { locale: ptBR }) : '',
+      ]),
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Logs de pagamentos</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          {subscriptions.length} assinaturas · receita ativa estimada:{' '}
-          <span className="font-semibold text-green-700">
-            {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} /mês
-          </span>
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Logs de pagamentos</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {subscriptions.length} assinaturas · receita ativa estimada:{' '}
+            <span className="font-semibold text-green-700">
+              {totalRevenue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} /mês
+            </span>
+          </p>
+        </div>
+        <button
+          onClick={handleExport}
+          disabled={filtered.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50 shrink-0"
+        >
+          <Download size={15} />
+          Exportar CSV ({filtered.length})
+        </button>
       </div>
 
       {/* Filters */}
