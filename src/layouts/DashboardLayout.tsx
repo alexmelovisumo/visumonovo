@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from '@/components/common/Sidebar'
 import { TopBar } from '@/components/common/TopBar'
+import { OnboardingFlow } from '@/components/onboarding/OnboardingFlow'
 
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -10,6 +11,8 @@ export function DashboardLayout() {
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <OnboardingFlow />
 
       {/* Mobile overlay */}
       {sidebarOpen && (
