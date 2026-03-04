@@ -19,6 +19,7 @@ import {
   BarChart2,
   ListChecks,
   Settings,
+  SlidersHorizontal,
   MessageSquare,
   Store,
   Heart,
@@ -58,6 +59,24 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     refetchInterval: 30_000,
   })
 
+  // Pending quotes count
+  const isSupplierType = userType === 'fornecedor' || userType === 'fornecedor_empresa'
+  const { data: pendingQuotes = 0 } = useQuery({
+    queryKey: ['pending-quotes-count', user?.id, isSupplierType],
+    queryFn: async () => {
+      const field  = isSupplierType ? 'supplier_id'  : 'requester_id'
+      const status = isSupplierType ? 'pending'       : 'responded'
+      const { count } = await supabase
+        .from('quote_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq(field, user!.id)
+        .eq('status', status)
+      return count ?? 0
+    },
+    enabled: !!user?.id,
+    refetchInterval: 60_000,
+  })
+
   const commonItems: NavItem[] = [
     { label: 'Início', path: '/dashboard/home', icon: <LayoutDashboard size={18} /> },
     { label: 'Mensagens', path: '/dashboard/mensagens', icon: <MessageSquare size={18} />, badge: unreadCount || undefined },
@@ -65,7 +84,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Meu Perfil', path: '/dashboard/perfil', icon: <User size={18} /> },
     { label: 'Localização', path: '/dashboard/localizacao', icon: <MapPin size={18} /> },
     { label: 'Assinatura', path: '/dashboard/renovar-assinatura', icon: <CreditCard size={18} /> },
+    { label: 'Configurações', path: '/dashboard/configuracoes', icon: <SlidersHorizontal size={18} /> },
   ]
+
+  const quoteBadge = pendingQuotes || undefined
 
   const companyItems: NavItem[] = [
     { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
@@ -73,20 +95,21 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
     { label: 'Mapa de Profissionais', path: '/dashboard/profissionais/mapa', icon: <Map size={18} /> },
     { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
-    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
   ]
 
   const professionalItems: NavItem[] = [
     { label: 'Projetos Disponíveis', path: '/dashboard/projetos', icon: <Search size={18} /> },
+    { label: 'Mapa de Projetos', path: '/dashboard/projetos/mapa', icon: <Map size={18} /> },
     { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} /> },
     { label: 'Meus Projetos', path: '/dashboard/gerenciar-projetos', icon: <ListChecks size={18} /> },
     { label: 'Estatísticas', path: '/dashboard/estatisticas', icon: <BarChart2 size={18} /> },
-    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
   ]
 
   const supplierItems: NavItem[] = [
     { label: 'Meus Produtos', path: '/dashboard/produtos', icon: <Package size={18} /> },
-    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} /> },
+    { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
   ]
 
   const adminItems: NavItem[] = [

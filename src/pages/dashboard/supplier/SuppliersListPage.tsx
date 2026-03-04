@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Search, Package, Tag, Store, ChevronLeft, MessageCircle } from 'lucide-react'
@@ -142,10 +142,15 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
 
 type SortOption = 'newest' | 'price_asc' | 'price_desc'
 
+const PAGE_SIZE = 12
+
 export function SuppliersListPage() {
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('Todos')
   const [sort, setSort]         = useState<SortOption>('newest')
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
+
+  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, category, sort])
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['suppliers-catalog'],
@@ -234,10 +239,20 @@ export function SuppliersListPage() {
         <>
           <p className="text-sm text-slate-400">{filtered.length} produto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.map((p) => (
+            {filtered.slice(0, displayLimit).map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>
+          {filtered.length > displayLimit && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setDisplayLimit((l) => l + PAGE_SIZE)}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-primary-300 hover:text-primary-700 transition-colors"
+              >
+                Carregar mais ({filtered.length - displayLimit} restantes)
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -126,11 +126,22 @@ export function SearchBar() {
     setOpen(false)
   }
 
+  const goToSearchPage = () => {
+    if (trimmed.length < 2) return
+    navigate(`/dashboard/busca?q=${encodeURIComponent(trimmed)}`)
+    setQuery('')
+    setOpen(false)
+    inputRef.current?.blur()
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!open || results.length === 0) return
     if (e.key === 'ArrowDown') { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)) }
     if (e.key === 'ArrowUp')   { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)) }
-    if (e.key === 'Enter' && active >= 0) { e.preventDefault(); goTo(results[active]) }
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (active >= 0 && results[active]) goTo(results[active])
+      else goToSearchPage()
+    }
     if (e.key === 'Escape') { setOpen(false); inputRef.current?.blur() }
   }
 
@@ -192,11 +203,15 @@ export function SearchBar() {
             </ul>
           )}
 
-          {/* Footer hint */}
+          {/* Footer hint + ver todos */}
           <div className="border-t border-slate-100 px-4 py-2 flex items-center gap-3 bg-slate-50">
-            <span className="text-[10px] text-slate-400">↑↓ navegar</span>
-            <span className="text-[10px] text-slate-400">Enter selecionar</span>
-            <span className="text-[10px] text-slate-400">Esc fechar</span>
+            <span className="text-[10px] text-slate-400">↑↓ navegar · Enter selecionar · Esc fechar</span>
+            <button
+              onClick={goToSearchPage}
+              className="ml-auto text-[10px] font-semibold text-primary-600 hover:text-primary-700 whitespace-nowrap"
+            >
+              Ver todos →
+            </button>
           </div>
         </div>
       )}

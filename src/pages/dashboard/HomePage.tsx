@@ -5,7 +5,7 @@ import {
   PlusCircle, Search, FolderOpen, Handshake,
   Package, AlertCircle, CheckCircle2, Clock,
   TrendingUp, Eye, MessageSquare, ArrowRight,
-  MapPin, BadgeCheck, Users, Briefcase,
+  MapPin, BadgeCheck, Users, Briefcase, UserCircle,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription, getDaysUntilExpiry } from '@/hooks/useSubscription'
@@ -67,6 +67,90 @@ function QuickAction({ to, icon, label, description, color }: QuickActionProps) 
       </div>
       <ArrowRight size={16} className="text-slate-300 group-hover:text-primary-400 transition-colors shrink-0" />
     </Link>
+  )
+}
+
+// ─── Profile Completeness Widget ─────────────────────────────
+
+interface CompletionItem {
+  label: string
+  done: boolean
+  to: string
+}
+
+function buildCompletionItems(profile: import('@/types').Profile): CompletionItem[] {
+  const isProfOrEmpPrest = profile.user_type === 'profissional' || profile.user_type === 'empresa_prestadora'
+
+  const base: CompletionItem[] = [
+    { label: 'Adicione seu nome completo',    done: !!profile.full_name,           to: '/dashboard/perfil' },
+    { label: 'Adicione uma foto de perfil',   done: !!profile.profile_image_url,   to: '/dashboard/perfil' },
+    { label: 'Escreva uma bio',               done: !!profile.bio,                 to: '/dashboard/perfil' },
+    { label: 'Adicione seu telefone',         done: !!profile.phone,               to: '/dashboard/perfil' },
+    { label: 'Defina sua cidade / estado',    done: !!profile.city && !!profile.state, to: '/dashboard/localizacao' },
+  ]
+
+  if (isProfOrEmpPrest) {
+    base.push(
+      { label: 'Adicione especialidades',          done: profile.specialties?.length > 0,      to: '/dashboard/perfil' },
+      { label: 'Defina raio de atendimento',       done: !!profile.coverage_radius_km,          to: '/dashboard/perfil' },
+      { label: 'Adicione um link profissional',    done: !!profile.website || !!profile.linkedin, to: '/dashboard/perfil' },
+    )
+  }
+
+  return base
+}
+
+function ProfileCompletenessWidget() {
+  const { profile } = useAuthStore()
+  if (!profile) return null
+
+  const items = buildCompletionItems(profile)
+  const done  = items.filter((i) => i.done).length
+  const total = items.length
+  const pct   = Math.round((done / total) * 100)
+
+  if (pct === 100) return null
+
+  const missing = items.filter((i) => !i.done)
+
+  return (
+    <div className="rounded-xl border border-primary-200 bg-primary-50 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-semibold text-primary-800 flex items-center gap-2">
+          <UserCircle size={16} /> Perfil {pct}% completo
+        </p>
+        <span className="text-xs font-bold text-primary-700">{done}/{total}</span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full h-2 bg-primary-200 rounded-full overflow-hidden mb-3">
+        <div
+          className="h-full bg-primary-600 rounded-full transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+
+      {/* Missing items (max 3) */}
+      <ul className="space-y-1">
+        {missing.slice(0, 3).map((item) => (
+          <li key={item.label}>
+            <Link
+              to={item.to}
+              className="flex items-center gap-2 text-xs text-primary-700 hover:text-primary-900 hover:underline"
+            >
+              <span className="w-4 h-4 rounded-full border border-primary-400 shrink-0" />
+              {item.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+
+      {missing.length > 3 && (
+        <p className="text-xs text-primary-500 mt-1.5">
+          +{missing.length - 3} item{missing.length - 3 > 1 ? 'ns' : ''} restante{missing.length - 3 > 1 ? 's' : ''}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -196,6 +280,7 @@ function EmpresaHome({ name }: { name: string }) {
       </div>
 
       <SubscriptionBanner />
+      <ProfileCompletenessWidget />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
@@ -314,6 +399,7 @@ function ProfissionalHome({ name }: { name: string }) {
       </div>
 
       <SubscriptionBanner />
+      <ProfileCompletenessWidget />
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
@@ -400,6 +486,7 @@ function FornecedorEmpresaHome({ name }: { name: string }) {
         <p className="text-slate-500 text-sm mt-1">Gerencie produtos e projetos em um só lugar.</p>
       </div>
       <SubscriptionBanner />
+      <ProfileCompletenessWidget />
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Produtos ativos" value={stats?.products ?? 0} icon={<Package size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/produtos" />
         <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
@@ -466,6 +553,7 @@ function EmpresaPrestadoraHome({ name }: { name: string }) {
         <p className="text-slate-500 text-sm mt-1">Publique projetos e também envie propostas.</p>
       </div>
       <SubscriptionBanner />
+      <ProfileCompletenessWidget />
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/meus-projetos" />
         <StatCard label="Projetos abertos" value={stats?.open ?? 0} icon={<Eye size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
@@ -520,6 +608,7 @@ function FornecedorHome({ name }: { name: string }) {
       </div>
 
       <SubscriptionBanner />
+      <ProfileCompletenessWidget />
 
       <div className="grid grid-cols-2 gap-4">
         <StatCard

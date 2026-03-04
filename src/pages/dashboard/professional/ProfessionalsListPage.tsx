@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { Search, MapPin, Star, UserCircle, ChevronLeft, BadgeCheck } from 'lucide-react'
@@ -155,6 +155,8 @@ function ProfessionalCard({ prof }: { prof: ProfessionalWithRating }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
+const PAGE_SIZE = 12
+
 const ESTADOS = [
   'AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT',
   'PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO',
@@ -166,6 +168,9 @@ export function ProfessionalsListPage() {
   const [filterType, setFilterType] = useState('')
   const [filterSpecialty, setFilterSpecialty] = useState('')
   const [onlyVerified, setOnlyVerified] = useState(false)
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
+
+  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, filterState, filterType, filterSpecialty, onlyVerified])
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ['professionals-list'],
@@ -273,10 +278,20 @@ export function ProfessionalsListPage() {
         <>
           <p className="text-sm text-slate-400">{filtered.length} profissional{filtered.length !== 1 ? 'is' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((p) => (
+            {filtered.slice(0, displayLimit).map((p) => (
               <ProfessionalCard key={p.id} prof={p} />
             ))}
           </div>
+          {filtered.length > displayLimit && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setDisplayLimit((l) => l + PAGE_SIZE)}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-primary-300 hover:text-primary-700 transition-colors"
+              >
+                Carregar mais ({filtered.length - displayLimit} restantes)
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

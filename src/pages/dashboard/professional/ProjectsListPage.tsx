@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, MapPin, Calendar, DollarSign, Filter, FolderOpen } from 'lucide-react'
+import { Search, MapPin, Calendar, DollarSign, Filter, FolderOpen, Map } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
@@ -83,11 +83,16 @@ function ProjectCard({ project }: { project: ProjectWithCats }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
+const PAGE_SIZE = 12
+
 export function ProjectsListPage() {
   const { profile } = useAuthStore()
   const [search, setSearch] = useState('')
   const [stateFilter, setStateFilter] = useState(profile?.state ?? '')
   const [categoryFilter, setCategoryFilter] = useState('')
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
+
+  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, stateFilter, categoryFilter])
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -136,12 +141,24 @@ export function ProjectsListPage() {
       )
     : projects
 
+  const displayed = filtered.slice(0, displayLimit)
+  const hasMore = filtered.length > displayLimit
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Projetos disponíveis</h1>
-        <p className="text-slate-500 text-sm mt-1">Encontre projetos e envie suas propostas</p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Projetos disponíveis</h1>
+          <p className="text-slate-500 text-sm mt-1">Encontre projetos e envie suas propostas</p>
+        </div>
+        <Link
+          to="/dashboard/projetos/mapa"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:border-primary-300 hover:text-primary-700 transition-colors shrink-0"
+        >
+          <Map size={15} />
+          Ver no mapa
+        </Link>
       </div>
 
       {/* Filters */}
@@ -199,11 +216,23 @@ export function ProjectsListPage() {
           <p className="text-sm text-slate-400">Tente ajustar os filtros ou verifique mais tarde.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((p) => (
-            <ProjectCard key={p.id} project={p} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {displayed.map((p) => (
+              <ProjectCard key={p.id} project={p} />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="flex justify-center pt-2">
+              <button
+                onClick={() => setDisplayLimit((l) => l + PAGE_SIZE)}
+                className="px-6 py-2.5 rounded-xl border border-slate-200 text-sm font-medium text-slate-600 hover:border-primary-300 hover:text-primary-700 transition-colors"
+              >
+                Carregar mais ({filtered.length - displayLimit} restantes)
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

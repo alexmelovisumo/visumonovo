@@ -365,9 +365,11 @@ function Footer() {
           © {new Date().getFullYear()} Visumo. Todos os direitos reservados.
         </p>
         <div className="flex items-center gap-4 text-sm text-slate-400">
-          <Link to="/planos" className="hover:text-slate-600 transition-colors">Planos</Link>
-          <Link to="/login" className="hover:text-slate-600 transition-colors">Entrar</Link>
-          <Link to="/cadastro" className="hover:text-slate-600 transition-colors">Cadastrar</Link>
+          <Link to="/planos"      className="hover:text-slate-600 transition-colors">Planos</Link>
+          <Link to="/faq"         className="hover:text-slate-600 transition-colors">FAQ</Link>
+          <Link to="/termos"      className="hover:text-slate-600 transition-colors">Termos</Link>
+          <Link to="/privacidade" className="hover:text-slate-600 transition-colors">Privacidade</Link>
+          <Link to="/login"       className="hover:text-slate-600 transition-colors">Entrar</Link>
         </div>
       </div>
     </footer>

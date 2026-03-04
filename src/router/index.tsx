@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { NotFoundPage } from '@/pages/public/NotFoundPage'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { AuthGuard } from '@/components/common/AuthGuard'
@@ -14,12 +15,18 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 // ─── Public Pages ─────────────────────────────────────────────
 import { LandingPage } from '@/pages/public/LandingPage'
 import { PlanSelectionPage } from '@/pages/public/PlanSelectionPage'
+import { PricingPage } from '@/pages/public/PricingPage'
+import { TermsPage } from '@/pages/public/TermsPage'
+import { PrivacyPage } from '@/pages/public/PrivacyPage'
+import { FAQPage } from '@/pages/public/FAQPage'
 
 // ─── Dashboard Pages ──────────────────────────────────────────
+import { SearchPage } from '@/pages/dashboard/SearchPage'
 import { HomePage } from '@/pages/dashboard/HomePage'
 import { ProfilePage } from '@/pages/dashboard/ProfilePage'
 import { LocationSetupPage } from '@/pages/dashboard/LocationSetupPage'
 import { MyFavoritesPage } from '@/pages/dashboard/MyFavoritesPage'
+import { AccountSettingsPage } from '@/pages/dashboard/AccountSettingsPage'
 
 // ─── Company Pages ────────────────────────────────────────────
 import { CreateProjectPage } from '@/pages/dashboard/company/CreateProjectPage'
@@ -34,6 +41,7 @@ import { ManageProjectsPage } from '@/pages/dashboard/professional/ManageProject
 import { ProfessionalsListPage } from '@/pages/dashboard/professional/ProfessionalsListPage'
 import { ProfessionalDetailPage } from '@/pages/dashboard/professional/ProfessionalDetailPage'
 import { NearbyProfessionalsPage } from '@/pages/dashboard/professional/NearbyProfessionalsPage'
+import { ProjectsMapPage } from '@/pages/dashboard/professional/ProjectsMapPage'
 import { ProfessionalStatsPage } from '@/pages/dashboard/professional/ProfessionalStatsPage'
 
 // ─── Supplier Pages ───────────────────────────────────────────
@@ -65,6 +73,10 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     children: [
       { path: '/', element: <LandingPage /> },
+      { path: '/planos', element: <PricingPage /> },
+      { path: '/faq', element: <FAQPage /> },
+      { path: '/termos', element: <TermsPage /> },
+      { path: '/privacidade', element: <PrivacyPage /> },
       { path: '/escolher-plano', element: <PlanSelectionPage /> },
     ],
   },
@@ -87,8 +99,10 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="/dashboard/home" replace /> },
       { path: 'home', element: <HomePage /> },
+      { path: 'busca', element: <SearchPage /> },
       { path: 'perfil', element: <ProfilePage /> },
       { path: 'favoritos', element: <MyFavoritesPage /> },
+      { path: 'configuracoes', element: <AccountSettingsPage /> },
       { path: 'localizacao', element: <LocationSetupPage /> },
       { path: 'aguardando-pagamento', element: <PaymentPendingPage /> },
       { path: 'renovar-assinatura', element: <RenewSubscriptionPage /> },
@@ -103,6 +117,7 @@ export const router = createBrowserRouter([
 
       // Professional
       { path: 'projetos', element: <ProjectsListPage /> },
+      { path: 'projetos/mapa', element: <ProjectsMapPage /> },
       { path: 'negociacoes', element: <NegotiationsPage /> },
       { path: 'gerenciar-projetos', element: <ManageProjectsPage /> },
       { path: 'profissionais', element: <ProfessionalsListPage /> },
@@ -132,6 +147,6 @@ export const router = createBrowserRouter([
     ],
   },
 
-  // Catch-all
-  { path: '*', element: <Navigate to="/" replace /> },
+  // Catch-all → 404
+  { path: '*', element: <NotFoundPage /> },
 ])
