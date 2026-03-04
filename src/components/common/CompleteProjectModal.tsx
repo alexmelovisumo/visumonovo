@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { X, Star, Check, Upload, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { notifyEmail } from '@/lib/email'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -108,6 +109,7 @@ export function CompleteProjectModal({
       await supabase.from('projects').update({ status: 'completed' }).eq('id', projectId)
 
       toast.success('Projeto concluído com sucesso!')
+      notifyEmail('projeto_finalizado', { projectId })
       onComplete()
     } catch (err: unknown) {
       const msg = (err as { message?: string })?.message ?? 'Erro ao finalizar projeto'

@@ -13,6 +13,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
+import { notifyEmail } from '@/lib/email'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,20 +65,22 @@ function SendProposalForm({
 
   const mutation = useMutation({
     mutationFn: async (data: ProposalFormData) => {
-      const { error } = await supabase.from('proposals').insert({
+      const { data: created, error } = await supabase.from('proposals').insert({
         project_id:      projectId,
         professional_id: userId,
         message:         data.message,
         proposed_value:  parseFloat(data.proposed_value),
         estimated_days:  parseInt(data.estimated_days),
         status:          'pending',
-      })
+      }).select('id').single()
       if (error) throw error
+      return created.id as string
     },
-    onSuccess: () => {
+    onSuccess: (proposalId) => {
       toast.success('Proposta enviada!')
       reset()
       onSent()
+      notifyEmail('nova_proposta', { proposalId })
     },
     onError: (err: unknown) => {
       const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? ''
@@ -370,9 +373,13 @@ export function ProjectDetailsPage() {
       const { error } = await supabase.from('proposals').update({ status }).eq('id', proposalId)
       if (error) throw error
     },
-    onSuccess: (_, { status }) => {
+    onSuccess: (_, { proposalId, status }) => {
       queryClient.invalidateQueries({ queryKey: ['project-proposals', id] })
       toast.success(status === 'accepted' ? 'Proposta aceita!' : 'Proposta recusada.')
+      notifyEmail(
+        status === 'accepted' ? 'proposta_aceita' : 'proposta_recusada',
+        { proposalId },
+      )
     },
     onError: () => toast.error('Erro ao atualizar proposta.'),
   })
