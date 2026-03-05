@@ -249,9 +249,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Header */}
       <div className="flex h-14 items-center justify-between px-4 safe-top">
         <Link to="/dashboard/home" className="flex items-center gap-2" onClick={onClose}>
-          <div className="w-8 h-8 rounded-lg bg-primary-500 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">V</span>
-          </div>
+          <img src="/icons/icon-192x192.png" alt="Visumo" className="w-8 h-8 rounded-lg" />
           <span className="text-white font-bold text-lg">Visumo</span>
         </Link>
         <button

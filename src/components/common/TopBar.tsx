@@ -223,7 +223,8 @@ export function TopBar({ onMenuClick }: TopBarProps) {
       </button>
 
       {/* Logo (mobile center) */}
-      <Link to="/dashboard/home" className="lg:hidden">
+      <Link to="/dashboard/home" className="lg:hidden flex items-center gap-2">
+        <img src="/icons/icon-192x192.png" alt="Visumo" className="w-7 h-7 rounded-lg" />
         <span className="text-lg font-bold text-primary-600">Visumo</span>
       </Link>
 
