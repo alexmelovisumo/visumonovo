@@ -12,7 +12,6 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
 import { USER_TYPE_LABELS } from '@/utils/constants'
 import type { Profile, PortfolioImage } from '@/types'
 
@@ -264,7 +263,7 @@ export function ProfessionalDetailPage() {
         .eq('reviewed_id', id!)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data as ReviewFull[]
+      return (data ?? []) as unknown as ReviewFull[]
     },
     enabled: !!id,
   })
@@ -295,7 +294,7 @@ export function ProfessionalDetailPage() {
         .order('completed_at', { ascending: false })
         .limit(5)
       if (error) throw error
-      return (data ?? []) as { project_id: string; completed_at: string; project: { id: string; title: string; city: string | null; state: string | null } | null }[]
+      return (data ?? []) as unknown as { project_id: string; completed_at: string; project: { id: string; title: string; city: string | null; state: string | null } | null }[]
     },
     enabled: !!id,
   })

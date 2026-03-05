@@ -111,7 +111,7 @@ export function PublicCompanyPage() {
         .order('created_at', { ascending: false })
         .limit(10)
       if (error) throw error
-      return data as ReviewItem[]
+      return (data ?? []) as unknown as ReviewItem[]
     },
     enabled: !!id,
   })
@@ -214,7 +214,7 @@ export function PublicCompanyPage() {
                 )}
               </div>
               <span className="text-xs font-medium px-2.5 py-0.5 rounded-full bg-primary-100 text-primary-700 mt-1 inline-block">
-                {USER_TYPE_LABELS[company.user_type] ?? 'Empresa'}
+                {USER_TYPE_LABELS[company.user_type as keyof typeof USER_TYPE_LABELS] ?? 'Empresa'}
               </span>
 
               {reviews.length > 0 && (

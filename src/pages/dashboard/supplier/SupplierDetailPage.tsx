@@ -274,7 +274,7 @@ export function SupplierDetailPage() {
         .select('rating, comment, created_at, requester:profiles!requester_id(full_name, avatar_url)')
         .eq('supplier_id', id!)
         .order('created_at', { ascending: false })
-      return (data ?? []) as { rating: number; comment: string | null; created_at: string; requester: { full_name: string | null; avatar_url: string | null } | null }[]
+      return (data ?? []) as unknown as { rating: number; comment: string | null; created_at: string; requester: { full_name: string | null; avatar_url: string | null } | null }[]
     },
     enabled: !!id,
   })

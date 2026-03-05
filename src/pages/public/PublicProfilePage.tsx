@@ -126,7 +126,7 @@ export function PublicProfilePage() {
         .eq('reviewed_id', id!)
         .order('created_at', { ascending: false })
       if (error) throw error
-      return data as ReviewFull[]
+      return (data ?? []) as unknown as ReviewFull[]
     },
     enabled: !!id,
   })
@@ -167,7 +167,7 @@ export function PublicProfilePage() {
   useSEO({
     title:       prof?.full_name ?? '',
     description: prof?.bio?.slice(0, 160) ?? undefined,
-    image:       (prof?.profile_image_url ?? prof?.avatar_url) ?? undefined,
+    image:       prof?.profile_image_url ?? undefined,
   })
 
   if (isLoading) {

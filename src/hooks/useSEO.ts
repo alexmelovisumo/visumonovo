@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-const DEFAULT_TITLE = 'Visumo — Marketplace de Comunicação Visual'
 const DEFAULT_DESC  = 'Conecte sua empresa com profissionais e fornecedores de comunicação visual.'
 
 function setMeta(property: string, content: string, attr = 'property') {
