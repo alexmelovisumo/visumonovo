@@ -160,6 +160,7 @@ interface TopBarProps {
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { profile, user, signOut } = useAuthStore()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen]   = useState(false)
   const [bellOpen, setBellOpen]   = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -294,7 +295,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </Link>
               <div className="my-1 border-t border-slate-100" />
               <button
-                onClick={() => { setMenuOpen(false); signOut() }}
+                onClick={async () => { setMenuOpen(false); await signOut(); navigate('/login', { replace: true }) }}
                 className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
                 <LogOut size={16} /> Sair
