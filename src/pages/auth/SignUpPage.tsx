@@ -235,9 +235,7 @@ export function SignUpPage() {
         </div>
         <div className="relative z-10 text-center max-w-sm">
           <div className="flex items-center justify-center gap-3 mb-10">
-            <div className="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">V</span>
-            </div>
+            <img src="/icons/icon-192x192.png" alt="Visumo" className="w-12 h-12 rounded-xl" />
             <span className="text-white font-bold text-3xl">Visumo</span>
           </div>
           <h2 className="text-2xl font-bold text-white mb-4">
@@ -254,9 +252,7 @@ export function SignUpPage() {
         <div className="w-full max-w-md">
           {/* Mobile logo */}
           <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
-            <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center">
-              <span className="text-white font-bold">V</span>
-            </div>
+            <img src="/icons/icon-192x192.png" alt="Visumo" className="w-9 h-9 rounded-lg" />
             <span className="text-primary-700 font-bold text-2xl">Visumo</span>
           </div>
 

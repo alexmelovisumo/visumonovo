@@ -184,7 +184,10 @@ export function OnboardingFlow() {
       {/* ── Header gradient ── */}
       <div className="bg-gradient-to-br from-primary-600 to-primary-800 px-6 safe-top pb-5">
         <div className="flex items-center justify-between mb-4">
-          <span className="text-white font-bold text-lg tracking-tight">Visumo</span>
+          <div className="flex items-center gap-2">
+            <img src="/icons/icon-192x192.png" alt="Visumo" className="w-7 h-7 rounded-lg" />
+            <span className="text-white font-bold text-lg tracking-tight">Visumo</span>
+          </div>
           <span className="text-primary-200 text-xs font-medium">
             {USER_TYPE_LABELS[userType]}
           </span>

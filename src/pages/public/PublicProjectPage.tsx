@@ -127,9 +127,7 @@ export function PublicProjectPage() {
       {/* Sticky header */}
       <header className="sticky top-0 z-20 bg-white border-b border-slate-200 px-4 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">V</span>
-          </div>
+          <img src="/icons/icon-192x192.png" alt="Visumo" className="w-7 h-7 rounded-lg" />
           <span className="font-bold text-primary-700 text-base">Visumo</span>
         </Link>
         <button

@@ -12,9 +12,7 @@ function Nav() {
     <nav className="fixed top-0 inset-x-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">V</span>
-          </div>
+          <img src="/icons/icon-192x192.png" alt="Visumo" className="w-8 h-8 rounded-lg" />
           <span className="font-bold text-lg text-slate-900">Visumo</span>
         </Link>
 
@@ -356,9 +354,7 @@ function Footer() {
     <footer className="border-t border-slate-200 py-8 px-4 sm:px-6 bg-white">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold text-xs">V</span>
-          </div>
+          <img src="/icons/icon-192x192.png" alt="Visumo" className="w-7 h-7 rounded-lg" />
           <span className="font-bold text-slate-900">Visumo</span>
         </div>
         <p className="text-sm text-slate-400 text-center">

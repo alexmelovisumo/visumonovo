@@ -40,9 +40,7 @@ export function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-9 h-9 rounded-lg bg-primary-600 flex items-center justify-center">
-            <span className="text-white font-bold">V</span>
-          </div>
+          <img src="/icons/icon-192x192.png" alt="Visumo" className="w-9 h-9 rounded-lg" />
           <span className="text-primary-700 font-bold text-2xl">Visumo</span>
         </div>
 
