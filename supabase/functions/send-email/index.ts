@@ -107,6 +107,20 @@ function tplProjetoFinalizado(d: {
   )
 }
 
+function tplCotacaoRespondida(d: {
+  requesterName: string; supplierName: string; productTitle: string | null
+}) {
+  return layout(
+    'linear-gradient(135deg,#0ea5e9,#0284c7)',
+    'Sua cotação foi respondida!',
+    d.productTitle ?? 'Cotação geral',
+    `<p>Olá, <strong>${d.requesterName}</strong>!</p>
+     <p><strong>${d.supplierName}</strong> respondeu à sua solicitação de cotação${d.productTitle ? ` para <strong>"${d.productTitle}"</strong>` : ''}.</p>
+     <p>Acesse o painel para ver o preço, prazo e mensagem do fornecedor.</p>
+     <a class="btn" href="${APP_URL}/dashboard/cotacoes">Ver resposta</a>`,
+  )
+}
+
 // ─── Send ─────────────────────────────────────────────────────
 
 async function send(to: string, subject: string, html: string) {
@@ -130,8 +144,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS })
 
   try {
-    const { type, proposalId, projectId } = await req.json() as {
-      type: string; proposalId?: string; projectId?: string
+    const { type, proposalId, projectId, quoteRequestId } = await req.json() as {
+      type: string; proposalId?: string; projectId?: string; quoteRequestId?: string
     }
 
     // ── Proposal-based events ──────────────────────────────────
@@ -239,6 +253,39 @@ Deno.serve(async (req) => {
           }),
         )
       }
+    }
+
+    // ── Quote response ─────────────────────────────────────────
+    if (type === 'cotacao_respondida') {
+      if (!quoteRequestId) throw new Error('quoteRequestId required')
+
+      const { data: qr, error: qErr } = await supabase
+        .from('quote_requests')
+        .select(`
+          id, product_title,
+          requester:profiles!requester_id(full_name, email),
+          supplier:profiles!supplier_id(full_name, company_name, email)
+        `)
+        .eq('id', quoteRequestId)
+        .single()
+
+      if (qErr || !qr) throw new Error(`Quote request not found: ${qErr?.message}`)
+
+      type ReqRel = { full_name: string | null; email: string }
+      type SupRel = { full_name: string | null; company_name: string | null; email: string }
+
+      const requester = qr.requester as unknown as ReqRel
+      const supplier  = qr.supplier  as unknown as SupRel
+
+      await send(
+        requester.email,
+        `Sua cotação foi respondida — ${qr.product_title ?? 'Cotação geral'}`,
+        tplCotacaoRespondida({
+          requesterName: requester.full_name ?? requester.email,
+          supplierName:  supplier.company_name ?? supplier.full_name ?? supplier.email,
+          productTitle:  qr.product_title ?? null,
+        }),
+      )
     }
 
     return new Response(JSON.stringify({ ok: true }), {

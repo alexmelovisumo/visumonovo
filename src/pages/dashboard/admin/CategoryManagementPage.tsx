@@ -137,7 +137,7 @@ function CategoryModal({
             <Input id="description" placeholder="Breve descrição da categoria" {...register('description')} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="display_order">Ordem</Label>
               <Input id="display_order" type="number" min="0" {...register('display_order')} />

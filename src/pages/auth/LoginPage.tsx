@@ -104,8 +104,8 @@ export function LoginPage() {
               <h1 className="text-2xl font-bold text-slate-900">Entrar na sua conta</h1>
               <p className="text-slate-500 text-sm mt-1">
                 Não tem conta?{' '}
-                <Link to="/cadastro" className="text-primary-600 font-medium hover:text-primary-700">
-                  Cadastre-se grátis
+                <Link to="/escolher-plano" className="text-primary-600 font-medium hover:text-primary-700">
+                  Ver planos e criar conta
                 </Link>
               </p>
             </div>

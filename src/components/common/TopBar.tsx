@@ -80,7 +80,7 @@ function NotificationsDropdown({ onClose }: { onClose: () => void }) {
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
   return (
-    <div className="absolute right-0 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden">
+    <div className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-1rem)] rounded-xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
         <p className="font-semibold text-slate-800 text-sm">
@@ -101,7 +101,7 @@ function NotificationsDropdown({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* List */}
-      <div className="max-h-96 overflow-y-auto divide-y divide-slate-50">
+      <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
         {notifications.length === 0 ? (
           <div className="py-10 text-center">
             <Bell size={28} className="text-slate-200 mx-auto mb-2" />
@@ -135,6 +135,17 @@ function NotificationsDropdown({ onClose }: { onClose: () => void }) {
             </button>
           ))
         )}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-slate-100 px-4 py-2.5 text-center">
+        <Link
+          to="/dashboard/notificacoes"
+          onClick={onClose}
+          className="text-xs font-medium text-primary-600 hover:text-primary-700"
+        >
+          Ver todas as notificações →
+        </Link>
       </div>
     </div>
   )

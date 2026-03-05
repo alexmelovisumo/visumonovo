@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Upload, X, ChevronLeft, ImageIcon } from 'lucide-react'
+import { Upload, X, ChevronLeft, ImageIcon, LayoutTemplate, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -29,6 +29,78 @@ const schema = z.object({
 })
 
 type FormData = z.infer<typeof schema>
+
+// ─── Template type ────────────────────────────────────────────
+
+interface ProjectTemplate {
+  id:           string
+  title:        string
+  description:  string | null
+  budget_min:   number | null
+  budget_max:   number | null
+  city:         string | null
+  state:        string | null
+  category_ids: string[] | null
+  created_at:   string
+}
+
+// ─── Template Modal ───────────────────────────────────────────
+
+function TemplateModal({
+  templates,
+  onUse,
+  onDelete,
+  onClose,
+}: {
+  templates: ProjectTemplate[]
+  onUse: (t: ProjectTemplate) => void
+  onDelete: (id: string) => void
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-4 shadow-xl flex flex-col max-h-[80vh]">
+        <div className="flex items-center justify-between shrink-0">
+          <h2 className="font-bold text-slate-900 flex items-center gap-2">
+            <LayoutTemplate size={17} /> Meus templates
+          </h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto space-y-3 flex-1 pr-1">
+          {templates.map((t) => (
+            <div key={t.id} className="border border-slate-200 rounded-xl p-4 flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-slate-900 text-sm truncate">{t.title}</p>
+                {t.description && (
+                  <p className="text-xs text-slate-400 line-clamp-2 mt-0.5">{t.description}</p>
+                )}
+                {(t.city || t.state) && (
+                  <p className="text-xs text-slate-400 mt-0.5">{[t.city, t.state].filter(Boolean).join(', ')}</p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <Button size="sm" onClick={() => { onUse(t); onClose() }}>
+                  Usar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-red-500 hover:text-red-600 hover:bg-red-50 h-7 px-2"
+                  onClick={() => onDelete(t.id)}
+                >
+                  <X size={12} />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Category Picker ─────────────────────────────────────────
 
@@ -131,7 +203,9 @@ export function CreateProjectPage() {
   const { user, profile } = useAuthStore()
   const queryClient = useQueryClient()
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [images, setImages] = useState<File[]>([])
+  const [images, setImages]                         = useState<File[]>([])
+  const [isUrgent, setIsUrgent]                     = useState(false)
+  const [showTemplateModal, setShowTemplateModal]   = useState(false)
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -146,9 +220,66 @@ export function CreateProjectPage() {
     },
   })
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { data: templates = [] } = useQuery({
+    queryKey: ['my-templates', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('project_templates')
+        .select('*')
+        .eq('owner_id', user!.id)
+        .order('created_at', { ascending: false })
+      return (data ?? []) as ProjectTemplate[]
+    },
+    enabled: !!user?.id,
+  })
+
+  const { register, handleSubmit, formState: { errors }, setValue, getValues } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { city: profile?.city ?? '', state: profile?.state ?? '' },
+  })
+
+  const applyTemplate = (t: ProjectTemplate) => {
+    setValue('title',       t.title)
+    setValue('description', t.description ?? '')
+    setValue('budget_min',  t.budget_min != null ? String(t.budget_min) : '')
+    setValue('budget_max',  t.budget_max != null ? String(t.budget_max) : '')
+    setValue('city',        t.city ?? '')
+    setValue('state',       (t.state ?? '') as FormData['state'])
+    setSelectedCategories(t.category_ids ?? [])
+    toast.success('Template carregado!')
+  }
+
+  const saveTemplate = useMutation({
+    mutationFn: async () => {
+      const data = getValues()
+      const { error } = await supabase.from('project_templates').insert({
+        owner_id:     user!.id,
+        title:        data.title,
+        description:  data.description || null,
+        budget_min:   data.budget_min ? parseFloat(data.budget_min) : null,
+        budget_max:   data.budget_max ? parseFloat(data.budget_max) : null,
+        city:         data.city || null,
+        state:        data.state || null,
+        category_ids: selectedCategories,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast.success('Salvo como template!')
+      queryClient.invalidateQueries({ queryKey: ['my-templates', user?.id] })
+    },
+    onError: () => toast.error('Erro ao salvar template'),
+  })
+
+  const deleteTemplate = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('project_templates').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      toast.success('Template removido')
+      queryClient.invalidateQueries({ queryKey: ['my-templates', user?.id] })
+    },
   })
 
   const mutation = useMutation({
@@ -167,6 +298,7 @@ export function CreateProjectPage() {
           city:        data.city,
           state:       data.state,
           status:      'open',
+          is_urgent:   isUrgent,
         })
         .select()
         .single()
@@ -211,10 +343,25 @@ export function CreateProjectPage() {
         >
           <ChevronLeft size={16} /> Voltar
         </button>
-        <h1 className="text-2xl font-bold text-slate-900">Criar novo projeto</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Publique seu projeto e receba propostas de profissionais qualificados.
-        </p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Criar novo projeto</h1>
+            <p className="text-slate-500 text-sm mt-1">
+              Publique seu projeto e receba propostas de profissionais qualificados.
+            </p>
+          </div>
+          {templates.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0 flex items-center gap-1.5"
+              onClick={() => setShowTemplateModal(true)}
+            >
+              <LayoutTemplate size={14} /> Templates ({templates.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="space-y-6">
@@ -249,7 +396,7 @@ export function CreateProjectPage() {
             {errors.description && <p className="text-xs text-red-500">{errors.description.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="budget_min">Orçamento mínimo (R$)</Label>
               <Input id="budget_min" type="number" min="0" step="0.01" placeholder="0,00" {...register('budget_min')} />
@@ -264,12 +411,32 @@ export function CreateProjectPage() {
             <Label htmlFor="deadline">Prazo desejado</Label>
             <Input id="deadline" type="date" min={new Date().toISOString().split('T')[0]} {...register('deadline')} />
           </div>
+
+          {/* Urgente */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <div
+              onClick={() => setIsUrgent((v) => !v)}
+              className={cn(
+                'w-10 h-6 rounded-full transition-colors flex items-center px-0.5',
+                isUrgent ? 'bg-red-500' : 'bg-slate-200'
+              )}
+            >
+              <div className={cn(
+                'w-5 h-5 rounded-full bg-white shadow transition-transform',
+                isUrgent ? 'translate-x-4' : 'translate-x-0'
+              )} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-800">Projeto urgente</p>
+              <p className="text-xs text-slate-400">Aparece com destaque vermelho na listagem</p>
+            </div>
+          </label>
         </div>
 
         {/* Location */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
           <h2 className="font-semibold text-slate-800">Localização</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="city" required>Cidade</Label>
               <Input id="city" placeholder="Ex: São Paulo" error={errors.city?.message} {...register('city')} />
@@ -309,16 +476,34 @@ export function CreateProjectPage() {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 pb-6">
-          <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1">
+        <div className="flex gap-3 pb-6 flex-wrap">
+          <Button type="button" variant="outline" onClick={() => navigate(-1)} className="flex-1 min-w-[120px]">
             Cancelar
           </Button>
-          <Button type="submit" className="flex-1" isLoading={mutation.isPending}>
+          <Button
+            type="button"
+            variant="outline"
+            className="flex items-center gap-1.5 shrink-0 text-slate-600"
+            isLoading={saveTemplate.isPending}
+            onClick={() => saveTemplate.mutate()}
+          >
+            <Save size={15} /> Salvar template
+          </Button>
+          <Button type="submit" className="flex-1 min-w-[120px]" isLoading={mutation.isPending}>
             <Upload size={16} />
             Publicar projeto
           </Button>
         </div>
       </form>
+
+      {showTemplateModal && (
+        <TemplateModal
+          templates={templates}
+          onUse={applyTemplate}
+          onDelete={(id) => deleteTemplate.mutate(id)}
+          onClose={() => setShowTemplateModal(false)}
+        />
+      )}
     </div>
   )
 }

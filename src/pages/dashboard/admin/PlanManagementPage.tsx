@@ -92,7 +92,7 @@ function EditPlanModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
         </div>
 
         <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5 col-span-2">
               <Label htmlFor="display_name" required>Nome exibido</Label>
               <Input id="display_name" error={errors.display_name?.message} {...register('display_name')} />
@@ -126,7 +126,7 @@ function EditPlanModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
             {errors.features && <p className="text-xs text-red-500">{errors.features.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="max_active_projects">Máx. projetos ativos</Label>
               <Input id="max_active_projects" type="number" min="0" placeholder="Ilimitado" {...register('max_active_projects')} />
@@ -146,7 +146,7 @@ function EditPlanModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
             <Input id="payment_link_yearly" placeholder="https://pagseguro.uol.com.br/..." {...register('payment_link_yearly')} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="display_order">Ordem de exibição</Label>
               <Input id="display_order" type="number" min="0" {...register('display_order')} />

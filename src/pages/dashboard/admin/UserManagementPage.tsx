@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Search, UserCheck, UserX, ChevronDown, BadgeCheck, ShieldOff } from 'lucide-react'
+import { Search, UserCheck, UserX, ChevronDown, BadgeCheck, ShieldOff, Crown } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -37,12 +37,14 @@ function RowActions({
   user,
   onToggleActive,
   onToggleVerify,
+  onToggleFeatured,
   onChangeType,
   loading,
 }: {
   user: ProfileWithSub
   onToggleActive: () => void
   onToggleVerify: () => void
+  onToggleFeatured: () => void
   onChangeType: (type: UserType) => void
   loading: boolean
 }) {
@@ -80,6 +82,15 @@ function RowActions({
               {user.is_verified
                 ? <><ShieldOff size={14} className="text-slate-500" /> Revogar verificação</>
                 : <><BadgeCheck size={14} className="text-blue-600" /> Verificar perfil</>
+              }
+            </button>
+            <button
+              className="flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-slate-50 transition-colors"
+              onClick={() => { onToggleFeatured(); setOpen(false) }}
+            >
+              {user.is_featured
+                ? <><Crown size={14} className="text-slate-500" /> Remover destaque</>
+                : <><Crown size={14} className="text-amber-500" /> Destacar perfil</>
               }
             </button>
             <div className="border-t border-slate-100 my-1" />
@@ -221,6 +232,9 @@ export function UserManagementPage() {
                             {u.is_verified && (
                               <BadgeCheck size={14} className="text-blue-500 shrink-0" />
                             )}
+                            {u.is_featured && (
+                              <Crown size={14} className="text-amber-500 shrink-0" />
+                            )}
                           </div>
                           <p className="text-xs text-slate-400 truncate">{u.email}</p>
                         </div>
@@ -262,6 +276,10 @@ export function UserManagementPage() {
                         onToggleVerify={() => {
                           setLoadingId(u.id)
                           updateUser.mutate({ id: u.id, patch: { is_verified: !u.is_verified } })
+                        }}
+                        onToggleFeatured={() => {
+                          setLoadingId(u.id)
+                          updateUser.mutate({ id: u.id, patch: { is_featured: !u.is_featured } })
                         }}
                         onChangeType={(type) => {
                           setLoadingId(u.id)

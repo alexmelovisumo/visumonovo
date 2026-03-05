@@ -16,7 +16,7 @@ import {
   Users,
   Tag,
   BarChart3,
-  BarChart2,
+  BarChart2, BarChart,
   ListChecks,
   Settings,
   SlidersHorizontal,
@@ -25,6 +25,9 @@ import {
   Heart,
   X,
   ClipboardList,
+  Trophy,
+  Activity,
+  Star,
 } from 'lucide-react'
 
 interface NavItem {
@@ -59,6 +62,27 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     refetchInterval: 30_000,
   })
 
+  // Pending proposals for company (badge on Propostas Recebidas)
+  const isCompanyType = userType === 'empresa' || userType === 'empresa_prestadora' || userType === 'fornecedor_empresa'
+  const { data: pendingProposals = 0 } = useQuery({
+    queryKey: ['pending-proposals-badge', user?.id],
+    queryFn: async () => {
+      const { data: projectRows } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('client_id', user!.id)
+      if (!projectRows?.length) return 0
+      const { count } = await supabase
+        .from('proposals')
+        .select('id', { count: 'exact', head: true })
+        .in('project_id', projectRows.map((p) => p.id))
+        .eq('status', 'pending')
+      return count ?? 0
+    },
+    enabled: !!user?.id && isCompanyType,
+    refetchInterval: 60_000,
+  })
+
   // Pending quotes count
   const isSupplierType = userType === 'fornecedor' || userType === 'fornecedor_empresa'
   const { data: pendingQuotes = 0 } = useQuery({
@@ -77,6 +101,38 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     refetchInterval: 60_000,
   })
 
+  // New supplier reviews (last 7 days)
+  const { data: newReviews = 0 } = useQuery({
+    queryKey: ['new-reviews-badge', user?.id],
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+      const { count } = await supabase
+        .from('supplier_reviews')
+        .select('id', { count: 'exact', head: true })
+        .eq('supplier_id', user!.id)
+        .gte('created_at', cutoff)
+      return count ?? 0
+    },
+    enabled: !!user?.id && isSupplierType,
+    refetchInterval: 60_000,
+  })
+
+  // Pending invitations for professionals
+  const isProfType = userType === 'profissional' || userType === 'empresa_prestadora'
+  const { data: pendingInvitations = 0 } = useQuery({
+    queryKey: ['invitations-badge', user?.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('project_invitations')
+        .select('id', { count: 'exact', head: true })
+        .eq('recipient_id', user!.id)
+        .eq('status', 'pending')
+      return count ?? 0
+    },
+    enabled: !!user?.id && isProfType,
+    refetchInterval: 60_000,
+  })
+
   const commonItems: NavItem[] = [
     { label: 'Início', path: '/dashboard/home', icon: <LayoutDashboard size={18} /> },
     { label: 'Mensagens', path: '/dashboard/mensagens', icon: <MessageSquare size={18} />, badge: unreadCount || undefined },
@@ -92,24 +148,31 @@ export function Sidebar({ open, onClose }: SidebarProps) {
   const companyItems: NavItem[] = [
     { label: 'Meus Projetos', path: '/dashboard/meus-projetos', icon: <FolderOpen size={18} /> },
     { label: 'Criar Projeto', path: '/dashboard/criar-projeto', icon: <PlusCircle size={18} /> },
+    { label: 'Propostas Recebidas', path: '/dashboard/propostas-recebidas', icon: <Handshake size={18} />, badge: pendingProposals || undefined },
+    { label: 'Estatísticas', path: '/dashboard/empresa-estatisticas', icon: <BarChart size={18} /> },
     { label: 'Profissionais', path: '/dashboard/profissionais', icon: <Users size={18} /> },
     { label: 'Mapa de Profissionais', path: '/dashboard/profissionais/mapa', icon: <Map size={18} /> },
     { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
     { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
+    { label: 'Ranking', path: '/dashboard/ranking', icon: <Trophy size={18} /> },
   ]
 
   const professionalItems: NavItem[] = [
     { label: 'Projetos Disponíveis', path: '/dashboard/projetos', icon: <Search size={18} /> },
     { label: 'Mapa de Projetos', path: '/dashboard/projetos/mapa', icon: <Map size={18} /> },
-    { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} /> },
+    { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} />, badge: pendingInvitations || undefined },
     { label: 'Meus Projetos', path: '/dashboard/gerenciar-projetos', icon: <ListChecks size={18} /> },
     { label: 'Estatísticas', path: '/dashboard/estatisticas', icon: <BarChart2 size={18} /> },
     { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
+    { label: 'Ranking', path: '/dashboard/ranking', icon: <Trophy size={18} /> },
   ]
 
   const supplierItems: NavItem[] = [
     { label: 'Meus Produtos', path: '/dashboard/produtos', icon: <Package size={18} /> },
     { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
+    { label: 'Avaliações', path: '/dashboard/minhas-avaliacoes', icon: <Star size={18} />, badge: newReviews || undefined },
+    { label: 'Estatísticas', path: '/dashboard/fornecedor-estatisticas', icon: <BarChart2 size={18} /> },
+    { label: 'Ranking', path: '/dashboard/ranking', icon: <Trophy size={18} /> },
   ]
 
   const adminItems: NavItem[] = [
@@ -120,6 +183,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Categorias', path: '/dashboard/admin/categorias', icon: <Settings size={18} /> },
     { label: 'Pagamentos', path: '/dashboard/admin/pagamentos', icon: <BarChart3 size={18} /> },
     { label: 'Relatórios', path: '/dashboard/admin/relatorios', icon: <ClipboardList size={18} /> },
+    { label: 'Atividade', path: '/dashboard/admin/atividade', icon: <Activity size={18} /> },
   ]
 
   const getTypeItems = (): NavItem[] => {

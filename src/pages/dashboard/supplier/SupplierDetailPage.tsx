@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import {
@@ -12,10 +12,16 @@ import {
   Tag,
   MessageCircle,
   FileText,
+  Share2,
+  Star,
+  UserCircle2,
 } from 'lucide-react'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -260,6 +266,23 @@ export function SupplierDetailPage() {
     enabled: !!id,
   })
 
+  const { data: reviews = [] } = useQuery({
+    queryKey: ['supplier-reviews', id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('supplier_reviews')
+        .select('rating, comment, created_at, requester:profiles!requester_id(full_name, avatar_url)')
+        .eq('supplier_id', id!)
+        .order('created_at', { ascending: false })
+      return (data ?? []) as { rating: number; comment: string | null; created_at: string; requester: { full_name: string | null; avatar_url: string | null } | null }[]
+    },
+    enabled: !!id,
+  })
+
+  const avgRating = reviews.length > 0
+    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+    : null
+
   const filtered = products.filter((p) => {
     const term = search.toLowerCase()
     return (
@@ -272,6 +295,13 @@ export function SupplierDetailPage() {
 
   const isLoading = loadingSupplier || loadingProducts
   const canContact = user?.id !== id
+
+  // Register profile view (skip own profile)
+  useEffect(() => {
+    if (supplier && user && supplier.id !== user.id) {
+      supabase.from('profile_views').insert({ profile_id: supplier.id, viewer_id: user.id })
+    }
+  }, [supplier?.id, user?.id])
 
   if (isLoading) {
     return (
@@ -313,14 +343,33 @@ export function SupplierDetailPage() {
       )}
 
       {/* Header nav */}
-      <div className="flex items-center gap-3">
-        <Link
-          to="/dashboard/fornecedores"
-          className="text-slate-400 hover:text-slate-600 transition-colors"
-        >
-          <ChevronLeft size={20} />
-        </Link>
-        <span className="text-sm text-slate-500">Catálogo de Fornecedores</span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Link
+            to="/dashboard/fornecedores"
+            className="text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </Link>
+          <span className="text-sm text-slate-500">Catálogo de Fornecedores</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <FavoriteButton entityType="supplier" entityId={id!} />
+          <button
+            onClick={async () => {
+              const url = `${window.location.origin}/fornecedor/${id}`
+              if (navigator.share) {
+                await navigator.share({ title: displayName, url })
+              } else {
+                await navigator.clipboard.writeText(url)
+                toast.success('Link copiado!')
+              }
+            }}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+          >
+            <Share2 size={15} /> Compartilhar
+          </button>
+        </div>
       </div>
 
       {/* Profile card */}
@@ -398,12 +447,72 @@ export function SupplierDetailPage() {
           </div>
 
           {/* Stats */}
-          <div className="shrink-0 text-center bg-slate-50 rounded-xl p-4 min-w-[80px]">
-            <p className="text-2xl font-black text-primary-600">{products.length}</p>
-            <p className="text-xs text-slate-500 mt-0.5">produto{products.length !== 1 ? 's' : ''}</p>
+          <div className="shrink-0 flex flex-col gap-3">
+            <div className="text-center bg-slate-50 rounded-xl p-4 min-w-[80px]">
+              <p className="text-2xl font-black text-primary-600">{products.length}</p>
+              <p className="text-xs text-slate-500 mt-0.5">produto{products.length !== 1 ? 's' : ''}</p>
+            </div>
+            {avgRating !== null && (
+              <div className="text-center bg-amber-50 rounded-xl p-4 min-w-[80px]">
+                <div className="flex items-center justify-center gap-1">
+                  <Star size={14} className="fill-amber-400 text-amber-400" />
+                  <p className="text-xl font-black text-amber-600">{avgRating.toFixed(1)}</p>
+                </div>
+                <p className="text-xs text-slate-500 mt-0.5">{reviews.length} avaliação{reviews.length !== 1 ? 'ões' : ''}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Reviews section */}
+      {reviews.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <Star size={18} className="fill-amber-400 text-amber-400" />
+            Avaliações
+            <span className="text-sm font-normal text-slate-400">({reviews.length})</span>
+          </h2>
+          <div className="space-y-3">
+            {reviews.map((r, i) => {
+              const reviewer = Array.isArray(r.requester) ? r.requester[0] : r.requester
+              return (
+                <div key={i} className="bg-white rounded-2xl border border-slate-200 p-4 flex gap-3">
+                  {reviewer?.avatar_url ? (
+                    <img src={reviewer.avatar_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
+                      <UserCircle2 size={18} className="text-slate-400" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                      <span className="text-sm font-semibold text-slate-800">
+                        {reviewer?.full_name ?? 'Usuário'}
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: 5 }).map((_, s) => (
+                          <Star
+                            key={s}
+                            size={12}
+                            className={s < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 fill-slate-200'}
+                          />
+                        ))}
+                        <span className="ml-1 text-xs text-slate-400">
+                          {format(new Date(r.created_at), "MMM 'de' yyyy", { locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                    {r.comment && (
+                      <p className="text-sm text-slate-600 leading-relaxed">{r.comment}</p>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Products section */}
       <div className="space-y-4">

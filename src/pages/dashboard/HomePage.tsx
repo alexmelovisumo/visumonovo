@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -6,13 +6,17 @@ import {
   Package, AlertCircle, CheckCircle2, Clock,
   TrendingUp, Eye, MessageSquare, ArrowRight,
   MapPin, BadgeCheck, Users, Briefcase, UserCircle,
+  Bell, FileCheck, Star, CalendarClock,
 } from 'lucide-react'
+import { formatDistanceToNow, differenceInDays } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { useAuthStore } from '@/stores/authStore'
 import { useSubscription, getDaysUntilExpiry } from '@/hooks/useSubscription'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import type { NotificationType } from '@/types'
 
 // ─── Stat Card ───────────────────────────────────────────────
 
@@ -247,6 +251,210 @@ function SubscriptionBanner() {
   return null
 }
 
+// ─── Upcoming Deadlines Widget ───────────────────────────────
+
+function UpcomingDeadlinesWidget() {
+  const { user } = useAuthStore()
+
+  const { data: upcoming = [] } = useQuery({
+    queryKey: ['upcoming-deadlines', user?.id],
+    queryFn: async () => {
+      const in14 = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()
+      const today = new Date().toISOString()
+      const { data } = await supabase
+        .from('projects')
+        .select('id, title, deadline, status')
+        .eq('client_id', user!.id)
+        .not('deadline', 'is', null)
+        .gte('deadline', today)
+        .lte('deadline', in14)
+        .not('status', 'in', '("completed","cancelled")')
+        .order('deadline', { ascending: true })
+        .limit(5)
+      return (data ?? []) as { id: string; title: string; deadline: string; status: string }[]
+    },
+    enabled: !!user?.id,
+    staleTime: 1000 * 60 * 10,
+  })
+
+  if (upcoming.length === 0) return null
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-3">
+      <h2 className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+        <CalendarClock size={15} className="text-amber-600" />
+        Prazos próximos
+      </h2>
+      <div className="space-y-2">
+        {upcoming.map((p) => {
+          const days = differenceInDays(new Date(p.deadline), new Date())
+          const urgent = days <= 3
+          return (
+            <Link
+              key={p.id}
+              to={`/dashboard/projeto/${p.id}`}
+              className="flex items-center justify-between gap-3 bg-white rounded-xl px-3 py-2.5 hover:border-amber-300 border border-transparent transition-colors"
+            >
+              <span className="text-sm text-slate-700 font-medium truncate flex-1">{p.title}</span>
+              <span className={cn(
+                'text-xs font-semibold shrink-0 px-2 py-0.5 rounded-full',
+                urgent ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+              )}>
+                {days === 0 ? 'Hoje' : days === 1 ? 'Amanhã' : `${days} dias`}
+              </span>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Top Viewed Projects Widget ──────────────────────────────
+
+function TopViewedProjectsWidget() {
+  const { data: projects = [] } = useQuery({
+    queryKey: ['top-viewed-projects'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('projects')
+        .select('id, title, view_count, status, city, state, budget_min, budget_max')
+        .eq('status', 'open')
+        .gt('view_count', 0)
+        .order('view_count', { ascending: false })
+        .limit(4)
+      return (data ?? []) as { id: string; title: string; view_count: number; status: string; city: string | null; state: string | null; budget_min: number | null; budget_max: number | null }[]
+    },
+    staleTime: 1000 * 60 * 5,
+  })
+
+  if (projects.length === 0) return null
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+          <TrendingUp size={16} className="text-primary-500" /> Projetos mais vistos
+        </h2>
+        <Link to="/dashboard/projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
+      </div>
+      <div className="space-y-2">
+        {projects.map((p) => {
+          const budget = p.budget_min || p.budget_max
+            ? (p.budget_min && p.budget_max
+                ? `R$ ${p.budget_min.toLocaleString('pt-BR')} – ${p.budget_max.toLocaleString('pt-BR')}`
+                : p.budget_min
+                  ? `A partir de R$ ${p.budget_min.toLocaleString('pt-BR')}`
+                  : `Até R$ ${p.budget_max!.toLocaleString('pt-BR')}`)
+            : 'A combinar'
+          return (
+            <Link
+              key={p.id}
+              to={`/dashboard/projeto/${p.id}`}
+              className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3 hover:border-primary-300 hover:shadow-sm transition-all"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-800 text-sm truncate">{p.title}</p>
+                <p className="text-xs text-slate-400 truncate">
+                  {budget}{(p.city || p.state) ? ` · ${[p.city, p.state].filter(Boolean).join('/')}` : ''}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-xs text-slate-500 shrink-0">
+                <Eye size={12} />
+                <span>{p.view_count}</span>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Recommended Suppliers Widget ────────────────────────────
+
+function RecommendedSuppliersWidget() {
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['recommended-suppliers-home'],
+    queryFn: async () => {
+      // Fetch all reviews to compute avg rating per supplier
+      const { data: reviews } = await supabase
+        .from('supplier_reviews')
+        .select('supplier_id, rating')
+
+      const map: Record<string, { sum: number; count: number }> = {}
+      for (const r of reviews ?? []) {
+        if (!map[r.supplier_id]) map[r.supplier_id] = { sum: 0, count: 0 }
+        map[r.supplier_id].sum   += r.rating
+        map[r.supplier_id].count += 1
+      }
+
+      // Keep only suppliers with ≥2 reviews and avg ≥ 4.0, top 4
+      const topIds = Object.entries(map)
+        .map(([id, v]) => ({ id, avg: v.sum / v.count, count: v.count }))
+        .filter((s) => s.count >= 2 && s.avg >= 4.0)
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, 4)
+        .map((s) => s.id)
+
+      if (topIds.length === 0) return []
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, company_name, avatar_url, city, state')
+        .in('id', topIds)
+
+      return (profiles ?? []).map((p) => ({
+        ...p,
+        avg:   map[p.id].sum / map[p.id].count,
+        count: map[p.id].count,
+      }))
+    },
+    staleTime: 1000 * 60 * 10,
+  })
+
+  if (suppliers.length === 0) return null
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+          <Star size={16} className="text-amber-500" /> Fornecedores recomendados
+        </h2>
+        <Link to="/dashboard/fornecedores" className="text-xs text-primary-600 hover:underline">Ver catálogo →</Link>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {suppliers.map((s) => (
+          <Link
+            key={s.id}
+            to={`/dashboard/fornecedor/${s.id}`}
+            className="flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-3 hover:border-primary-300 hover:shadow-sm transition-all"
+          >
+            {s.avatar_url ? (
+              <img src={s.avatar_url} alt={s.full_name ?? ''} className="w-10 h-10 rounded-full object-cover shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center shrink-0 text-primary-700 font-bold text-sm">
+                {(s.company_name ?? s.full_name ?? 'F')[0].toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-slate-800 text-sm truncate">{s.company_name ?? s.full_name}</p>
+              {(s.city || s.state) && (
+                <p className="text-xs text-slate-400 truncate">{[s.city, s.state].filter(Boolean).join(' / ')}</p>
+              )}
+            </div>
+            <div className="flex items-center gap-1 shrink-0 text-xs">
+              <Star size={11} className="fill-amber-400 text-amber-400" />
+              <span className="font-semibold text-slate-700">{s.avg.toFixed(1)}</span>
+              <span className="text-slate-400">({s.count})</span>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Empresa Home ────────────────────────────────────────────
 
 function EmpresaHome({ name }: { name: string }) {
@@ -255,18 +463,21 @@ function EmpresaHome({ name }: { name: string }) {
   const { data: stats } = useQuery({
     queryKey: ['empresa-stats', user?.id],
     queryFn: async () => {
-      const [projects, proposals] = await Promise.all([
-        supabase.from('projects').select('id, status', { count: 'exact' }).eq('client_id', user!.id),
-        supabase.from('proposals').select('id', { count: 'exact' }).in(
-          'project_id',
-          (await supabase.from('projects').select('id').eq('client_id', user!.id)).data?.map(p => p.id) ?? []
-        ),
-      ])
+      const { data: projectRows, count: total } = await supabase
+        .from('projects').select('id, status', { count: 'exact' }).eq('client_id', user!.id)
+      const ids = (projectRows ?? []).map((p) => p.id)
+      const [pending, accepted] = ids.length > 0
+        ? await Promise.all([
+            supabase.from('proposals').select('id', { count: 'exact', head: true }).in('project_id', ids).eq('status', 'pending'),
+            supabase.from('proposals').select('id', { count: 'exact', head: true }).in('project_id', ids).eq('status', 'accepted'),
+          ])
+        : [{ count: 0 }, { count: 0 }]
       return {
-        total:    projects.count ?? 0,
-        open:     (projects.data ?? []).filter(p => p.status === 'open').length,
-        active:   (projects.data ?? []).filter(p => p.status === 'in_progress').length,
-        proposals: proposals.count ?? 0,
+        total:    total ?? 0,
+        open:     (projectRows ?? []).filter(p => p.status === 'open').length,
+        active:   (projectRows ?? []).filter(p => p.status === 'in_progress').length,
+        pending:  pending.count ?? 0,
+        accepted: accepted.count ?? 0,
       }
     },
     enabled: !!user?.id,
@@ -281,8 +492,9 @@ function EmpresaHome({ name }: { name: string }) {
 
       <SubscriptionBanner />
       <ProfileCompletenessWidget />
+      <UpcomingDeadlinesWidget />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           label="Total de projetos"
           value={stats?.total ?? 0}
@@ -302,12 +514,14 @@ function EmpresaHome({ name }: { name: string }) {
           value={stats?.active ?? 0}
           icon={<TrendingUp size={22} className="text-green-600" />}
           color="bg-green-50"
+          to="/dashboard/empresa-estatisticas"
         />
         <StatCard
-          label="Propostas recebidas"
-          value={stats?.proposals ?? 0}
+          label="Propostas pendentes"
+          value={stats?.pending ?? 0}
           icon={<MessageSquare size={22} className="text-violet-600" />}
           color="bg-violet-50"
+          to="/dashboard/propostas-recebidas"
         />
       </div>
 
@@ -329,10 +543,10 @@ function EmpresaHome({ name }: { name: string }) {
             color="bg-blue-50"
           />
           <QuickAction
-            to="/dashboard/profissionais"
-            icon={<Search size={20} className="text-green-600" />}
-            label="Encontrar profissionais"
-            description="Veja perfis de profissionais"
+            to="/dashboard/propostas-recebidas"
+            icon={<Handshake size={20} className="text-green-600" />}
+            label="Propostas recebidas"
+            description="Revise e aceite propostas dos profissionais"
             color="bg-green-50"
           />
           <QuickAction
@@ -343,6 +557,16 @@ function EmpresaHome({ name }: { name: string }) {
             color="bg-violet-50"
           />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Bell size={16} className="text-primary-500" /> Atividade recente
+          </h2>
+          <Link to="/dashboard/notificacoes" className="text-xs text-primary-600 hover:underline">Ver todas →</Link>
+        </div>
+        <ActivityFeedWidget />
       </div>
 
       <div>
@@ -364,6 +588,8 @@ function EmpresaHome({ name }: { name: string }) {
         </div>
         <FeaturedProfessionals />
       </div>
+
+      <RecommendedSuppliersWidget />
     </div>
   )
 }
@@ -401,7 +627,7 @@ function ProfissionalHome({ name }: { name: string }) {
       <SubscriptionBanner />
       <ProfileCompletenessWidget />
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Propostas enviadas"
           value={stats?.proposals ?? 0}
@@ -448,12 +674,24 @@ function ProfissionalHome({ name }: { name: string }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Bell size={16} className="text-primary-500" /> Atividade recente
+          </h2>
+          <Link to="/dashboard/notificacoes" className="text-xs text-primary-600 hover:underline">Ver todas →</Link>
+        </div>
+        <ActivityFeedWidget />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
             <Briefcase size={16} className="text-primary-500" /> Projetos abertos
           </h2>
           <Link to="/dashboard/projetos" className="text-xs text-primary-600 hover:underline">Ver todos →</Link>
         </div>
         <RecentProjectsFeed />
       </div>
+
+      <TopViewedProjectsWidget />
     </div>
   )
 }
@@ -487,7 +725,7 @@ function FornecedorEmpresaHome({ name }: { name: string }) {
       </div>
       <SubscriptionBanner />
       <ProfileCompletenessWidget />
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Produtos ativos" value={stats?.products ?? 0} icon={<Package size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/produtos" />
         <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
         <StatCard label="Projetos abertos" value={stats?.open ?? 0} icon={<Eye size={22} className="text-green-600" />} color="bg-green-50" to="/dashboard/meus-projetos" />
@@ -500,6 +738,16 @@ function FornecedorEmpresaHome({ name }: { name: string }) {
           <QuickAction to="/dashboard/meus-projetos" icon={<FolderOpen size={20} className="text-violet-600" />} label="Meus projetos" description="Acompanhe seus projetos publicados" color="bg-violet-50" />
           <QuickAction to="/dashboard/profissionais" icon={<Search size={20} className="text-green-600" />} label="Profissionais" description="Encontre profissionais para contratar" color="bg-green-50" />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Bell size={16} className="text-primary-500" /> Atividade recente
+          </h2>
+          <Link to="/dashboard/notificacoes" className="text-xs text-primary-600 hover:underline">Ver todas →</Link>
+        </div>
+        <ActivityFeedWidget />
       </div>
 
       <div>
@@ -554,7 +802,7 @@ function EmpresaPrestadoraHome({ name }: { name: string }) {
       </div>
       <SubscriptionBanner />
       <ProfileCompletenessWidget />
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Projetos publicados" value={stats?.total ?? 0} icon={<FolderOpen size={22} className="text-primary-600" />} color="bg-primary-50" to="/dashboard/meus-projetos" />
         <StatCard label="Projetos abertos" value={stats?.open ?? 0} icon={<Eye size={22} className="text-blue-600" />} color="bg-blue-50" to="/dashboard/meus-projetos" />
         <StatCard label="Propostas enviadas" value={stats?.proposals ?? 0} icon={<MessageSquare size={22} className="text-violet-600" />} color="bg-violet-50" to="/dashboard/negociacoes" />
@@ -567,6 +815,16 @@ function EmpresaPrestadoraHome({ name }: { name: string }) {
           <QuickAction to="/dashboard/meus-projetos" icon={<FolderOpen size={20} className="text-violet-600" />} label="Meus projetos" description="Acompanhe projetos publicados" color="bg-violet-50" />
           <QuickAction to="/dashboard/negociacoes" icon={<Handshake size={20} className="text-green-600" />} label="Minhas propostas" description="Acompanhe propostas enviadas" color="bg-green-50" />
         </div>
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Bell size={16} className="text-primary-500" /> Atividade recente
+          </h2>
+          <Link to="/dashboard/notificacoes" className="text-xs text-primary-600 hover:underline">Ver todas →</Link>
+        </div>
+        <ActivityFeedWidget />
       </div>
 
       <div>
@@ -590,12 +848,17 @@ function FornecedorHome({ name }: { name: string }) {
   const { data: stats } = useQuery({
     queryKey: ['supplier-stats', user?.id],
     queryFn: async () => {
-      const { count } = await supabase
-        .from('products')
-        .select('id', { count: 'exact' })
-        .eq('supplier_id', user!.id)
-        .eq('is_active', true)
-      return { products: count ?? 0 }
+      const [prodRes, quotesRes] = await Promise.all([
+        supabase.from('products').select('id', { count: 'exact', head: true }).eq('supplier_id', user!.id).eq('is_active', true),
+        supabase.from('quote_requests').select('status').eq('supplier_id', user!.id),
+      ])
+      const quotes = quotesRes.data ?? []
+      const total  = quotes.length
+      const done   = quotes.filter((q) => q.status !== 'pending').length
+      return {
+        products:     prodRes.count ?? 0,
+        responseRate: total > 0 ? Math.round((done / total) * 100) : undefined,
+      }
     },
     enabled: !!user?.id,
   })
@@ -610,13 +873,20 @@ function FornecedorHome({ name }: { name: string }) {
       <SubscriptionBanner />
       <ProfileCompletenessWidget />
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <StatCard
           label="Produtos ativos"
           value={stats?.products ?? 0}
           icon={<Package size={22} className="text-primary-600" />}
           color="bg-primary-50"
           to="/dashboard/produtos"
+        />
+        <StatCard
+          label="Taxa de resposta"
+          value={stats?.responseRate !== undefined ? `${stats.responseRate}%` : '—'}
+          icon={<TrendingUp size={22} className="text-green-600" />}
+          color="bg-green-50"
+          to="/dashboard/fornecedor-estatisticas"
         />
       </div>
 
@@ -629,6 +899,16 @@ function FornecedorHome({ name }: { name: string }) {
           description="Adicione e edite seus produtos no catálogo"
           color="bg-primary-50"
         />
+      </div>
+
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <Bell size={16} className="text-primary-500" /> Atividade recente
+          </h2>
+          <Link to="/dashboard/notificacoes" className="text-xs text-primary-600 hover:underline">Ver todas →</Link>
+        </div>
+        <ActivityFeedWidget />
       </div>
 
       <div>
@@ -800,6 +1080,103 @@ function FeaturedProfessionals() {
   )
 }
 
+// ─── Activity Feed Widget ─────────────────────────────────────
+
+interface ActivityNotif {
+  id: string
+  type: NotificationType
+  title: string
+  body: string | null
+  link: string | null
+  is_read: boolean
+  created_at: string
+}
+
+const NOTIF_ICON: Record<string, React.ReactNode> = {
+  nova_proposta:      <MessageSquare size={14} className="text-primary-600" />,
+  proposta_aceita:    <CheckCircle2  size={14} className="text-green-600" />,
+  proposta_recusada:  <AlertCircle   size={14} className="text-slate-500" />,
+  projeto_finalizado: <FolderOpen    size={14} className="text-blue-600" />,
+  nova_avaliacao:     <Star          size={14} className="text-amber-500" />,
+  cotacao_respondida: <FileCheck     size={14} className="text-cyan-600" />,
+}
+
+const NOTIF_BG: Record<string, string> = {
+  nova_proposta:      'bg-primary-50',
+  proposta_aceita:    'bg-green-50',
+  proposta_recusada:  'bg-slate-100',
+  projeto_finalizado: 'bg-blue-50',
+  nova_avaliacao:     'bg-amber-50',
+  cotacao_respondida: 'bg-cyan-50',
+}
+
+function ActivityFeedWidget() {
+  const { user } = useAuthStore()
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ['activity-feed', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('notifications')
+        .select('id, type, title, body, link, is_read, created_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      return (data ?? []) as ActivityNotif[]
+    },
+    enabled: !!user?.id,
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+  })
+
+  if (isLoading) return null
+  if (items.length === 0) return (
+    <div className="bg-white rounded-xl border border-slate-200 p-6 text-center text-sm text-slate-400">
+      Nenhuma atividade recente.
+    </div>
+  )
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100 overflow-hidden">
+      {items.map((n) => {
+        const inner = (
+          <div
+            className={cn(
+              'flex items-start gap-3 p-4 transition-colors',
+              !n.is_read && 'bg-primary-50/40',
+              n.link && 'hover:bg-slate-50 cursor-pointer'
+            )}
+          >
+            <div className={cn(
+              'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5',
+              NOTIF_BG[n.type] ?? 'bg-slate-100'
+            )}>
+              {NOTIF_ICON[n.type] ?? <Bell size={14} className="text-slate-500" />}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className={cn('text-sm leading-snug', !n.is_read ? 'font-semibold text-slate-900' : 'text-slate-700')}>
+                {n.title}
+              </p>
+              {n.body && (
+                <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{n.body}</p>
+              )}
+              <p className="text-[10px] text-slate-400 mt-1">
+                {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: ptBR })}
+              </p>
+            </div>
+            {!n.is_read && (
+              <div className="w-2 h-2 rounded-full bg-primary-500 shrink-0 mt-1.5" />
+            )}
+          </div>
+        )
+        return n.link
+          ? <Link key={n.id} to={n.link}>{inner}</Link>
+          : <div key={n.id}>{inner}</div>
+      })}
+    </div>
+  )
+}
+
 // ─── Admin Home ───────────────────────────────────────────────
 
 function AdminHome({ name }: { name: string }) {
@@ -822,18 +1199,49 @@ function AdminHome({ name }: { name: string }) {
 // ─── Main Component ───────────────────────────────────────────
 
 export function HomePage() {
-  const { profile, user, fetchProfile } = useAuthStore()
+  const { profile, user, fetchProfile, isLoading } = useAuthStore()
+  const [retries, setRetries] = useState(0)
 
-  // Recupera profile se estiver null (pode acontecer após redirect pós-signup)
+  // Recupera profile se estiver null — faz até 5 tentativas com intervalo de 1.5s
   useEffect(() => {
-    if (user && !profile) {
-      fetchProfile(user.id)
-    }
-  }, [user, profile, fetchProfile])
+    if (!user || profile) return
+    if (retries >= 5) return
 
-  const firstName = profile?.full_name?.split(' ')[0] ?? 'usuário'
+    const timer = setTimeout(async () => {
+      await fetchProfile(user.id)
+      setRetries((r) => r + 1)
+    }, retries === 0 ? 0 : 1500)
 
-  switch (profile?.user_type) {
+    return () => clearTimeout(timer)
+  }, [user, profile, fetchProfile, retries])
+
+  // Ainda carregando
+  if (isLoading || (!profile && retries < 5)) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Falhou em carregar o perfil
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4">
+        <p className="text-slate-500 text-sm">Não foi possível carregar seu perfil.</p>
+        <button
+          onClick={() => { setRetries(0) }}
+          className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700 transition-colors"
+        >
+          Tentar novamente
+        </button>
+      </div>
+    )
+  }
+
+  const firstName = profile.full_name?.split(' ')[0] ?? 'usuário'
+
+  switch (profile.user_type) {
     case 'empresa':              return <EmpresaHome name={firstName} />
     case 'profissional':         return <ProfissionalHome name={firstName} />
     case 'fornecedor':           return <FornecedorHome name={firstName} />
@@ -842,8 +1250,8 @@ export function HomePage() {
     case 'admin':                return <AdminHome name={firstName} />
     default:
       return (
-        <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-slate-500 text-sm">Tipo de conta não reconhecido.</p>
         </div>
       )
   }

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 
-export type FavoriteEntityType = 'professional' | 'project'
+export type FavoriteEntityType = 'professional' | 'project' | 'supplier'
 
 interface Favorite {
   id: string

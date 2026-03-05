@@ -1,13 +1,29 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ChevronLeft, Eye, Send, Star, CheckCircle, TrendingUp } from 'lucide-react'
+import { ChevronLeft, Eye, Send, Star, CheckCircle, TrendingUp, Download } from 'lucide-react'
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
 } from 'recharts'
 import { subDays, format, isSameDay } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
+import { Button } from '@/components/ui/button'
+import { PROPOSAL_STATUS_LABELS } from '@/utils/constants'
+
+// ─── CSV helper ───────────────────────────────────────────────
+
+function downloadCsv(filename: string, rows: (string | number)[][]) {
+  const BOM = '\uFEFF'
+  const content = BOM + rows.map((r) => r.map((c) => `"${String(c ?? '').replace(/"/g, '""')}"`).join(';')).join('\n')
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url; a.download = filename; a.click()
+  URL.revokeObjectURL(url)
+}
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -77,6 +93,40 @@ function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: 
 
 export function ProfessionalStatsPage() {
   const { user } = useAuthStore()
+  const [exporting, setExporting] = useState(false)
+
+  async function exportProposals() {
+    setExporting(true)
+    try {
+      const { data, error } = await supabase
+        .from('proposals')
+        .select('status, proposed_value, estimated_days, message, created_at, project:projects!project_id(title, city, state)')
+        .eq('professional_id', user!.id)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      const rows: (string | number)[][] = [
+        ['Projeto', 'Cidade', 'Estado', 'Status', 'Valor proposto (R$)', 'Prazo (dias)', 'Data'],
+        ...(data ?? []).map((p) => {
+          const proj = Array.isArray(p.project) ? p.project[0] : p.project
+          return [
+            (proj as { title?: string })?.title ?? '',
+            (proj as { city?: string })?.city ?? '',
+            (proj as { state?: string })?.state ?? '',
+            PROPOSAL_STATUS_LABELS[p.status as keyof typeof PROPOSAL_STATUS_LABELS] ?? p.status,
+            p.proposed_value ?? '',
+            p.estimated_days ?? '',
+            format(new Date(p.created_at), 'dd/MM/yyyy'),
+          ]
+        }),
+      ]
+      downloadCsv(`propostas_${format(new Date(), 'yyyyMMdd')}.csv`, rows)
+      toast.success('Exportação concluída')
+    } catch {
+      toast.error('Erro ao exportar propostas')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const { data: views = [], isLoading: loadingViews } = useQuery({
     queryKey: ['profile-views', user?.id],
@@ -152,14 +202,27 @@ export function ProfessionalStatsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <Link to="/dashboard/home" className="text-slate-400 hover:text-slate-600 transition-colors">
-          <ChevronLeft size={20} />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Minhas Estatísticas</h1>
-          <p className="text-sm text-slate-500">Acompanhe sua performance no marketplace</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Link to="/dashboard/home" className="text-slate-400 hover:text-slate-600 transition-colors">
+            <ChevronLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Minhas Estatísticas</h1>
+            <p className="text-sm text-slate-500">Acompanhe sua performance no marketplace</p>
+          </div>
         </div>
+        {proposalsSent > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={exportProposals}
+            isLoading={exporting}
+            className="gap-1.5"
+          >
+            <Download size={13} /> Propostas CSV
+          </Button>
+        )}
       </div>
 
       {/* Stat cards */}

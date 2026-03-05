@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Heart, User, Briefcase, MapPin, Star, ChevronLeft, BadgeCheck } from 'lucide-react'
+import { Heart, User, Briefcase, MapPin, Star, ChevronLeft, BadgeCheck, Store } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useFavorites } from '@/hooks/useFavorites'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
@@ -131,6 +131,68 @@ function FavProfCard({ prof }: { prof: FavProfessional }) {
   )
 }
 
+// ─── Supplier Card ────────────────────────────────────────────
+
+interface FavSupplier {
+  id: string
+  full_name: string | null
+  company_name: string | null
+  avatar_url: string | null
+  profile_image_url: string | null
+  bio: string | null
+  city: string | null
+  state: string | null
+  is_verified: boolean
+}
+
+function FavSupplierCard({ supplier }: { supplier: FavSupplier }) {
+  const displayName = supplier.company_name ?? supplier.full_name ?? 'Fornecedor'
+  const avatar = supplier.profile_image_url ?? supplier.avatar_url
+  const initials = displayName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase()
+
+  return (
+    <div className="relative bg-white rounded-2xl border border-slate-200 p-5 hover:shadow-md hover:border-primary-300 transition-all flex flex-col gap-3">
+      <div className="absolute top-3 right-3">
+        <FavoriteButton entityType="supplier" entityId={supplier.id} />
+      </div>
+
+      <Link to={`/dashboard/fornecedor/${supplier.id}`} className="flex items-center gap-3">
+        {avatar ? (
+          <img src={avatar} alt={displayName} className="w-12 h-12 rounded-xl object-cover shrink-0" />
+        ) : (
+          <div className="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center shrink-0">
+            <span className="text-primary-700 font-bold text-sm">{initials}</span>
+          </div>
+        )}
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="font-bold text-slate-900 truncate">{displayName}</p>
+            {supplier.is_verified && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-50 text-blue-600 border border-blue-200 rounded-full text-[10px] font-semibold shrink-0">
+                <BadgeCheck size={10} /> Verificado
+              </span>
+            )}
+          </div>
+          {(supplier.city || supplier.state) && (
+            <p className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+              <MapPin size={10} /> {[supplier.city, supplier.state].filter(Boolean).join(', ')}
+            </p>
+          )}
+        </div>
+      </Link>
+
+      {supplier.bio && <p className="text-sm text-slate-500 line-clamp-2">{supplier.bio}</p>}
+
+      <Link
+        to={`/dashboard/fornecedor/${supplier.id}`}
+        className="mt-auto text-xs font-semibold text-primary-600 hover:underline"
+      >
+        Ver catálogo →
+      </Link>
+    </div>
+  )
+}
+
 // ─── Project Card ─────────────────────────────────────────────
 
 function FavProjectCard({ project }: { project: FavProject }) {
@@ -177,15 +239,16 @@ function FavProjectCard({ project }: { project: FavProject }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-type Tab = 'professionals' | 'projects'
+type Tab = 'professionals' | 'projects' | 'suppliers'
 
 export function MyFavoritesPage() {
   const { user } = useAuthStore()
   const [activeTab, setActiveTab] = useState<Tab>('professionals')
   const { favoriteIds } = useFavorites()
 
-  const profIds     = favoriteIds('professional')
-  const projectIds  = favoriteIds('project')
+  const profIds      = favoriteIds('professional')
+  const projectIds   = favoriteIds('project')
+  const supplierIds  = favoriteIds('supplier')
 
   const { data: professionals = [], isLoading: loadingProfs } = useQuery({
     queryKey: ['fav-professionals', profIds.join(',')],
@@ -214,6 +277,20 @@ export function MyFavoritesPage() {
     enabled: !!user?.id,
   })
 
+  const { data: suppliers = [], isLoading: loadingSuppliers } = useQuery({
+    queryKey: ['fav-suppliers', supplierIds.join(',')],
+    queryFn: async () => {
+      if (supplierIds.length === 0) return []
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, company_name, avatar_url, profile_image_url, bio, city, state, is_verified')
+        .in('id', supplierIds)
+      if (error) throw error
+      return (data ?? []) as FavSupplier[]
+    },
+    enabled: !!user?.id,
+  })
+
   const { data: projects = [], isLoading: loadingProjects } = useQuery({
     queryKey: ['fav-projects', projectIds.join(',')],
     queryFn: async () => {
@@ -237,7 +314,7 @@ export function MyFavoritesPage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Meus Favoritos</h1>
-          <p className="text-sm text-slate-500">Profissionais e projetos salvos</p>
+          <p className="text-sm text-slate-500">Profissionais, fornecedores e projetos salvos</p>
         </div>
       </div>
 
@@ -256,6 +333,22 @@ export function MyFavoritesPage() {
           {profIds.length > 0 && (
             <span className="bg-primary-100 text-primary-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
               {profIds.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('suppliers')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+            activeTab === 'suppliers'
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          <Store size={15} />
+          Fornecedores
+          {supplierIds.length > 0 && (
+            <span className="bg-primary-100 text-primary-700 text-xs px-1.5 py-0.5 rounded-full font-semibold">
+              {supplierIds.length}
             </span>
           )}
         </button>
@@ -301,6 +394,34 @@ export function MyFavoritesPage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {professionals.map((p) => (
               <FavProfCard key={p.id} prof={p} />
+            ))}
+          </div>
+        )
+      )}
+
+      {activeTab === 'suppliers' && (
+        loadingSuppliers ? (
+          <div className="flex justify-center py-16">
+            <div className="w-7 h-7 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : suppliers.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center">
+            <Store size={36} className="text-slate-200 mx-auto mb-3" />
+            <p className="font-semibold text-slate-600">Nenhum fornecedor salvo</p>
+            <p className="text-sm text-slate-400 mt-1">
+              Clique no coração nos cards para salvar fornecedores.
+            </p>
+            <Link
+              to="/dashboard/fornecedores"
+              className="inline-flex items-center gap-2 mt-5 px-4 py-2 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors"
+            >
+              Explorar fornecedores
+            </Link>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {suppliers.map((s) => (
+              <FavSupplierCard key={s.id} supplier={s} />
             ))}
           </div>
         )

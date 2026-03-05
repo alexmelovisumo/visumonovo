@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, CreditCard, Zap, ExternalLink, AlertCircle } from 'lucide-react'
+import { CheckCircle2, CreditCard, Zap, ExternalLink, AlertCircle, History } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -9,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useSubscription, fetchPlansByUserType, createPendingSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { SUBSCRIPTION_STATUS_LABELS } from '@/utils/constants'
+import { cn } from '@/lib/utils'
 import type { SubscriptionPlan, BillingCycle, UserSubscription } from '@/types'
 
 // ─── Current subscription banner ─────────────────────────────
@@ -172,6 +173,14 @@ function PlanCard({
 
 // ─── Page ─────────────────────────────────────────────────────
 
+const STATUS_COLOR: Record<string, string> = {
+  active:    'bg-green-100 text-green-700',
+  trial:     'bg-blue-100 text-blue-700',
+  pending:   'bg-amber-100 text-amber-700',
+  expired:   'bg-slate-100 text-slate-500',
+  cancelled: 'bg-red-100 text-red-600',
+}
+
 export function RenewSubscriptionPage() {
   const { user, profile } = useAuthStore()
   const queryClient       = useQueryClient()
@@ -240,6 +249,20 @@ export function RenewSubscriptionPage() {
     checkout.mutate({ plan, cycle })
   }
 
+  const { data: history = [] } = useQuery({
+    queryKey: ['subscription-history', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('user_subscriptions')
+        .select('*, plan:subscription_plans(display_name)')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      return (data ?? []) as (UserSubscription & { plan: { display_name: string } | null })[]
+    },
+    enabled: !!user?.id,
+  })
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <div>
@@ -304,6 +327,43 @@ export function RenewSubscriptionPage() {
           </a>
         </div>
       </div>
+
+      {/* Histórico de assinaturas */}
+      {history.length > 1 && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <History size={14} /> Histórico
+          </h2>
+          <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+            {history.map((sub) => (
+              <div key={sub.id} className="flex items-center gap-4 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-slate-800 truncate">
+                    {sub.plan?.display_name ?? 'Plano'}
+                  </p>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    {format(new Date(sub.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                    {sub.subscription_end_date && (
+                      <> → {format(new Date(sub.subscription_end_date), "dd/MM/yyyy", { locale: ptBR })}</>
+                    )}
+                    {sub.billing_cycle && (
+                      <> · {sub.billing_cycle === 'yearly' ? 'Anual' : 'Mensal'}</>
+                    )}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-full', STATUS_COLOR[sub.status] ?? 'bg-slate-100 text-slate-500')}>
+                    {SUBSCRIPTION_STATUS_LABELS[sub.status] ?? sub.status}
+                  </span>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {sub.current_price === 0 ? 'Grátis' : sub.current_price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   )
 }

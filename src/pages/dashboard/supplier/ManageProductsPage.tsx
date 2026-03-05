@@ -1,9 +1,10 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { PlusCircle, Edit2, Trash2, Package, X, ImageIcon } from 'lucide-react'
+import { PlusCircle, Edit2, Trash2, Package, X, ImageIcon, ExternalLink, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -153,7 +154,7 @@ function ProductForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="price">Preço (R$)</Label>
               <Input id="price" type="number" min="0" step="0.01" placeholder="0,00" {...register('price')} />
@@ -288,6 +289,13 @@ export function ManageProductsPage() {
     setEditingProduct(undefined)
   }
 
+  const publicUrl = user ? `${window.location.origin}/fornecedor/${user.id}` : ''
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(publicUrl)
+    toast.success('Link copiado!')
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -302,6 +310,32 @@ export function ManageProductsPage() {
           <PlusCircle size={16} /> Novo produto
         </Button>
       </div>
+
+      {/* Public profile banner */}
+      {user && (
+        <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-primary-800">Seu perfil público</p>
+            <p className="text-xs text-primary-600 truncate mt-0.5">{publicUrl}</p>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={copyLink}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+            >
+              <Copy size={13} /> Copiar link
+            </button>
+            <Link
+              to={`/fornecedor/${user.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <ExternalLink size={13} /> Visualizar
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Content */}
       {isLoading ? (

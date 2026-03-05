@@ -19,6 +19,10 @@ import { PricingPage } from '@/pages/public/PricingPage'
 import { TermsPage } from '@/pages/public/TermsPage'
 import { PrivacyPage } from '@/pages/public/PrivacyPage'
 import { FAQPage } from '@/pages/public/FAQPage'
+import { PublicProfilePage } from '@/pages/public/PublicProfilePage'
+import { PublicSupplierPage } from '@/pages/public/PublicSupplierPage'
+import { PublicCompanyPage } from '@/pages/public/PublicCompanyPage'
+import { PublicProjectPage } from '@/pages/public/PublicProjectPage'
 
 // ─── Dashboard Pages ──────────────────────────────────────────
 import { SearchPage } from '@/pages/dashboard/SearchPage'
@@ -27,12 +31,16 @@ import { ProfilePage } from '@/pages/dashboard/ProfilePage'
 import { LocationSetupPage } from '@/pages/dashboard/LocationSetupPage'
 import { MyFavoritesPage } from '@/pages/dashboard/MyFavoritesPage'
 import { AccountSettingsPage } from '@/pages/dashboard/AccountSettingsPage'
+import { NotificationsPage } from '@/pages/dashboard/NotificationsPage'
+import { RankingPage } from '@/pages/dashboard/RankingPage'
 
 // ─── Company Pages ────────────────────────────────────────────
 import { CreateProjectPage } from '@/pages/dashboard/company/CreateProjectPage'
 import { MyProjectsPage } from '@/pages/dashboard/company/MyProjectsPage'
 import { ProjectDetailsPage } from '@/pages/dashboard/company/ProjectDetailsPage'
 import { EditProjectPage } from '@/pages/dashboard/company/EditProjectPage'
+import { ReceivedProposalsPage } from '@/pages/dashboard/company/ReceivedProposalsPage'
+import { CompanyStatsPage } from '@/pages/dashboard/company/CompanyStatsPage'
 
 // ─── Professional Pages ───────────────────────────────────────
 import { ProjectsListPage } from '@/pages/dashboard/professional/ProjectsListPage'
@@ -49,6 +57,8 @@ import { ManageProductsPage } from '@/pages/dashboard/supplier/ManageProductsPag
 import { SuppliersListPage } from '@/pages/dashboard/supplier/SuppliersListPage'
 import { SupplierDetailPage } from '@/pages/dashboard/supplier/SupplierDetailPage'
 import { QuoteRequestsPage } from '@/pages/dashboard/supplier/QuoteRequestsPage'
+import { SupplierStatsPage } from '@/pages/dashboard/supplier/SupplierStatsPage'
+import { MyReviewsPage } from '@/pages/dashboard/supplier/MyReviewsPage'
 
 // ─── Subscription Pages ───────────────────────────────────────
 import { PaymentPendingPage } from '@/pages/dashboard/PaymentPendingPage'
@@ -64,6 +74,7 @@ import { PlanManagementPage } from '@/pages/dashboard/admin/PlanManagementPage'
 import { CategoryManagementPage } from '@/pages/dashboard/admin/CategoryManagementPage'
 import { PaymentLogsPage } from '@/pages/dashboard/admin/PaymentLogsPage'
 import { AdminReportsPage } from '@/pages/dashboard/admin/AdminReportsPage'
+import { AdminActivityPage } from '@/pages/dashboard/admin/AdminActivityPage'
 
 // ─── Router ───────────────────────────────────────────────────
 
@@ -78,6 +89,10 @@ export const router = createBrowserRouter([
       { path: '/termos', element: <TermsPage /> },
       { path: '/privacidade', element: <PrivacyPage /> },
       { path: '/escolher-plano', element: <PlanSelectionPage /> },
+      { path: '/profissional/:id', element: <PublicProfilePage /> },
+      { path: '/fornecedor/:id', element: <PublicSupplierPage /> },
+      { path: '/empresa/:id', element: <PublicCompanyPage /> },
+      { path: '/projeto/:id', element: <PublicProjectPage /> },
     ],
   },
 
@@ -103,6 +118,8 @@ export const router = createBrowserRouter([
       { path: 'perfil', element: <ProfilePage /> },
       { path: 'favoritos', element: <MyFavoritesPage /> },
       { path: 'configuracoes', element: <AccountSettingsPage /> },
+      { path: 'notificacoes', element: <NotificationsPage /> },
+      { path: 'ranking', element: <RankingPage /> },
       { path: 'localizacao', element: <LocationSetupPage /> },
       { path: 'aguardando-pagamento', element: <PaymentPendingPage /> },
       { path: 'renovar-assinatura', element: <RenewSubscriptionPage /> },
@@ -112,6 +129,8 @@ export const router = createBrowserRouter([
       // Company
       { path: 'criar-projeto', element: <CreateProjectPage /> },
       { path: 'meus-projetos', element: <MyProjectsPage /> },
+      { path: 'propostas-recebidas', element: <ReceivedProposalsPage /> },
+      { path: 'empresa-estatisticas', element: <CompanyStatsPage /> },
       { path: 'projeto/:id', element: <ProjectDetailsPage /> },
       { path: 'editar-projeto/:id', element: <EditProjectPage /> },
 
@@ -130,6 +149,8 @@ export const router = createBrowserRouter([
       { path: 'fornecedores', element: <SuppliersListPage /> },
       { path: 'fornecedor/:id', element: <SupplierDetailPage /> },
       { path: 'cotacoes', element: <QuoteRequestsPage /> },
+      { path: 'fornecedor-estatisticas', element: <SupplierStatsPage /> },
+      { path: 'minhas-avaliacoes', element: <MyReviewsPage /> },
 
       // Admin (only user_type = 'admin')
       {
@@ -142,6 +163,7 @@ export const router = createBrowserRouter([
           { path: 'admin/categorias', element: <CategoryManagementPage /> },
           { path: 'admin/pagamentos', element: <PaymentLogsPage /> },
           { path: 'admin/relatorios', element: <AdminReportsPage /> },
+          { path: 'admin/atividade', element: <AdminActivityPage /> },
         ],
       },
     ],

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, Package, Tag, Store, ChevronLeft, MessageCircle } from 'lucide-react'
+import { Search, Package, Tag, Store, ChevronLeft, MessageCircle, BadgeCheck, Crown, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { FavoriteButton } from '@/components/common/FavoriteButton'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -22,6 +23,8 @@ interface ProductWithSupplier {
     email: string
     city: string | null
     state: string | null
+    is_verified: boolean
+    is_featured: boolean
   } | null
 }
 
@@ -33,7 +36,7 @@ async function fetchProducts(): Promise<ProductWithSupplier[]> {
     .select(`
       *,
       supplier:profiles!supplier_id (
-        full_name, phone, email, city, state
+        full_name, phone, email, city, state, is_verified, is_featured
       )
     `)
     .eq('is_active', true)
@@ -60,7 +63,15 @@ const CATEGORIES = [
 
 // ─── Product Card ─────────────────────────────────────────────
 
-function ProductCard({ product }: { product: ProductWithSupplier }) {
+function ProductCard({
+  product,
+  avgRating,
+  ratingCount,
+}: {
+  product: ProductWithSupplier
+  avgRating: number | null
+  ratingCount: number
+}) {
   const handleContact = () => {
     const phone = product.supplier?.phone?.replace(/\D/g, '')
     const msg = encodeURIComponent(`Olá! Tenho interesse no produto: ${product.name}`)
@@ -72,7 +83,10 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition-all flex flex-col">
+    <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition-all flex flex-col">
+      <div className="absolute top-2 right-2 z-10">
+        <FavoriteButton entityType="supplier" entityId={product.supplier_id} />
+      </div>
       {/* Image */}
       <div className="w-full h-44 bg-slate-100 shrink-0 overflow-hidden">
         {product.image_url ? (
@@ -111,14 +125,28 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
           <Store size={11} />
           <Link
             to={`/dashboard/fornecedor/${product.supplier_id}`}
-            className="font-medium truncate hover:text-primary-600 hover:underline transition-colors"
+            className="font-medium truncate hover:text-primary-600 hover:underline transition-colors inline-flex items-center gap-1"
           >
             {product.supplier?.full_name ?? '—'}
+            {product.supplier?.is_verified && (
+              <BadgeCheck size={12} className="text-blue-500 shrink-0" />
+            )}
+            {product.supplier?.is_featured && (
+              <Crown size={12} className="text-amber-500 shrink-0" />
+            )}
           </Link>
           {product.supplier?.city && (
             <span className="text-slate-400 truncate">· {product.supplier.city}/{product.supplier.state}</span>
           )}
         </div>
+
+        {avgRating !== null && (
+          <div className="flex items-center gap-1 text-xs">
+            <Star size={11} className="fill-amber-400 text-amber-400 shrink-0" />
+            <span className="font-semibold text-slate-700">{avgRating.toFixed(1)}</span>
+            <span className="text-slate-400">({ratingCount})</span>
+          </div>
+        )}
 
         {product.price != null && (
           <p className="text-base font-black text-primary-600">
@@ -140,7 +168,7 @@ function ProductCard({ product }: { product: ProductWithSupplier }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
-type SortOption = 'newest' | 'price_asc' | 'price_desc'
+type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'rating'
 
 const PAGE_SIZE = 12
 
@@ -157,6 +185,22 @@ export function SuppliersListPage() {
     queryFn: fetchProducts,
   })
 
+  const { data: ratingsMap = {} } = useQuery({
+    queryKey: ['suppliers-ratings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('supplier_reviews')
+        .select('supplier_id, rating')
+      const map: Record<string, { sum: number; count: number }> = {}
+      for (const r of data ?? []) {
+        if (!map[r.supplier_id]) map[r.supplier_id] = { sum: 0, count: 0 }
+        map[r.supplier_id].sum   += r.rating
+        map[r.supplier_id].count += 1
+      }
+      return map
+    },
+  })
+
   const filtered = products
     .filter((p) => {
       const term = search.toLowerCase()
@@ -171,8 +215,19 @@ export function SuppliersListPage() {
       return matchesSearch && matchesCategory
     })
     .sort((a, b) => {
+      // Featured suppliers first
+      const aFeat = a.supplier?.is_featured ?? false
+      const bFeat = b.supplier?.is_featured ?? false
+      if (aFeat !== bFeat) return aFeat ? -1 : 1
       if (sort === 'price_asc') return (a.price ?? Infinity) - (b.price ?? Infinity)
       if (sort === 'price_desc') return (b.price ?? -Infinity) - (a.price ?? -Infinity)
+      if (sort === 'rating') {
+        const rA = ratingsMap[a.supplier_id]
+        const rB = ratingsMap[b.supplier_id]
+        const avgA = rA ? rA.sum / rA.count : 0
+        const avgB = rB ? rB.sum / rB.count : 0
+        return avgB - avgA
+      }
       return 0 // newest: already ordered by DB
     })
 
@@ -219,6 +274,7 @@ export function SuppliersListPage() {
           className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
         >
           <option value="newest">Mais recentes</option>
+          <option value="rating">Melhor avaliados</option>
           <option value="price_asc">Menor preço</option>
           <option value="price_desc">Maior preço</option>
         </select>
@@ -239,9 +295,17 @@ export function SuppliersListPage() {
         <>
           <p className="text-sm text-slate-400">{filtered.length} produto{filtered.length !== 1 ? 's' : ''} encontrado{filtered.length !== 1 ? 's' : ''}</p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {filtered.slice(0, displayLimit).map((p) => (
-              <ProductCard key={p.id} product={p} />
-            ))}
+            {filtered.slice(0, displayLimit).map((p) => {
+              const r = ratingsMap[p.supplier_id]
+              return (
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  avgRating={r ? r.sum / r.count : null}
+                  ratingCount={r?.count ?? 0}
+                />
+              )
+            })}
           </div>
           {filtered.length > displayLimit && (
             <div className="flex justify-center pt-2">

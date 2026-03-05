@@ -55,6 +55,8 @@ export interface Profile {
   coverage_cities: string[] | null
   specialties: string[]
   is_verified: boolean
+  is_featured: boolean
+  is_available: boolean
   is_active: boolean
   created_at: string
   updated_at: string
@@ -89,6 +91,8 @@ export interface Project {
   latitude: number | null
   longitude: number | null
   view_count: number
+  is_urgent: boolean
+  is_featured: boolean
   created_at: string
   updated_at: string
   // Relations
@@ -96,6 +100,23 @@ export interface Project {
   categories?: ProjectCategory[]
   images?: ProjectImage[]
   proposals_count?: number
+}
+
+// ─── Project Invitation ───────────────────────────────────────
+
+export type InvitationStatus = 'pending' | 'accepted' | 'declined'
+
+export interface ProjectInvitation {
+  id: string
+  project_id: string
+  sender_id: string
+  recipient_id: string
+  message: string | null
+  status: InvitationStatus
+  created_at: string
+  // Relations
+  project?: Pick<Project, 'id' | 'title' | 'status' | 'city' | 'state'>
+  sender?: Pick<Profile, 'id' | 'full_name' | 'profile_image_url'>
 }
 
 export interface ProjectImage {
@@ -116,6 +137,7 @@ export interface Proposal {
   proposed_value: number
   estimated_days: number
   status: ProposalStatus
+  rejection_reason: string | null
   created_at: string
   updated_at: string
   // Relations
@@ -164,6 +186,18 @@ export interface PortfolioImage {
   description: string | null
   display_order: number
   created_at: string
+}
+
+// ─── Project Milestone ────────────────────────────────────────
+
+export interface ProjectMilestone {
+  id: string
+  project_id: string
+  title: string
+  is_done: boolean
+  position: number
+  created_at: string
+  updated_at: string
 }
 
 // ─── Project Attachment ───────────────────────────────────────
@@ -304,6 +338,10 @@ export type NotificationType =
   | 'proposta_recusada'
   | 'projeto_finalizado'
   | 'nova_avaliacao'
+  | 'cotacao_respondida'
+  | 'marco_concluido'
+  | 'convite_projeto'
+  | 'nova_cotacao'
 
 export interface Notification {
   id: string
@@ -343,6 +381,16 @@ export interface QuoteResponse {
   unit_price: number | null
   message: string
   estimated_days: number | null
+  created_at: string
+}
+
+export interface SupplierReview {
+  id: string
+  requester_id: string
+  supplier_id: string
+  quote_request_id: string
+  rating: number
+  comment: string | null
   created_at: string
 }
 

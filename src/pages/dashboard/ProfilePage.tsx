@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   User, Camera, Save, Plus, Trash2, Globe, Linkedin,
-  MapPin, Phone, FileText, Image as ImageIcon, Upload, Navigation,
+  MapPin, Phone, FileText, Image as ImageIcon, Upload, Navigation, ExternalLink, CheckCircle2, XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -61,34 +62,41 @@ function PortfolioSection({ userId }: { userId: string }) {
     if (!files.length) return
     setUploading(true)
 
+    let added = 0
     for (const file of files) {
       if (!file.type.startsWith('image/')) continue
-      if (file.size > 10 * 1024 * 1024) { toast.error(`${file.name} muito grande (máx. 10 MB)`); continue }
+      if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} muito grande (máx. 5 MB)`); continue }
 
-      const ext = file.name.split('.').pop()
+      const ext = file.name.split('.').pop() ?? 'jpg'
       const filePath = `${userId}/${Date.now()}.${ext}`
 
       const { error: upErr } = await supabase.storage
         .from('portfolio-images')
         .upload(filePath, file)
 
-      if (upErr) { toast.error(`Erro ao enviar ${file.name}`); continue }
+      if (upErr) { toast.error(`Erro ao enviar ${file.name}: ${upErr.message}`); continue }
 
       const { data: { publicUrl } } = supabase.storage
         .from('portfolio-images')
         .getPublicUrl(filePath)
 
-      await supabase.from('portfolio_images').insert({
+      const title = file.name.replace(/\.[^/.]+$/, '')
+
+      const { error: dbErr } = await supabase.from('portfolio_images').insert({
         profile_id:    userId,
         image_url:     publicUrl,
-        display_order: images.length,
+        title,
+        display_order: images.length + added,
       })
+
+      if (dbErr) { toast.error(`Erro ao salvar ${file.name}: ${dbErr.message}`); continue }
+      added++
     }
 
     setUploading(false)
     queryClient.invalidateQueries({ queryKey: ['portfolio', userId] })
     if (fileRef.current) fileRef.current.value = ''
-    toast.success('Imagens adicionadas ao portfólio!')
+    if (added > 0) toast.success(`${added} imagem${added > 1 ? 'ns' : ''} adicionada${added > 1 ? 's' : ''} ao portfólio!`)
   }
 
   const handleDelete = async (img: PortfolioImage) => {
@@ -185,26 +193,40 @@ function AvatarUpload({ currentUrl, userId, onUploaded }: { currentUrl: string |
     const file = e.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem'); return }
-    if (file.size > 5 * 1024 * 1024) { toast.error('Imagem muito grande (máx. 5 MB)'); return }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Imagem muito grande (máx. 2 MB)'); return }
 
     setUploading(true)
-    const ext = file.name.split('.').pop()
-    const filePath = `${userId}/avatar.${ext}`
+    try {
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const filePath = `${userId}/avatar.${ext}`
 
-    const { error } = await supabase.storage
-      .from('profile-images')
-      .upload(filePath, file, { upsert: true })
+      const { error } = await supabase.storage
+        .from('profile-images')
+        .upload(filePath, file, { upsert: true })
 
-    if (error) { toast.error('Erro ao enviar foto'); setUploading(false); return }
+      if (error) { toast.error('Erro no upload: ' + error.message); return }
 
-    const { data: { publicUrl } } = supabase.storage
-      .from('profile-images')
-      .getPublicUrl(filePath)
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-images')
+        .getPublicUrl(filePath)
 
-    // Append timestamp to bust cache
-    onUploaded(`${publicUrl}?t=${Date.now()}`)
-    setUploading(false)
-    if (fileRef.current) fileRef.current.value = ''
+      const finalUrl = `${publicUrl}?t=${Date.now()}`
+
+      const { error: dbErr } = await supabase
+        .from('profiles')
+        .update({ profile_image_url: finalUrl })
+        .eq('id', userId)
+
+      if (dbErr) { toast.error('Foto enviada mas não salva. Clique em Salvar.') }
+      else { toast.success('Foto de perfil atualizada!') }
+
+      onUploaded(finalUrl)
+    } catch (err: unknown) {
+      toast.error('Falha no upload: ' + ((err as { message?: string })?.message ?? 'erro desconhecido'))
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
   }
 
   const initials = '?'
@@ -321,6 +343,18 @@ export function ProfilePage() {
     },
   })
 
+  const toggleAvailability = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_available: !profile?.is_available })
+        .eq('id', user!.id)
+      if (error) throw error
+    },
+    onSuccess: () => fetchProfile(user!.id),
+    onError: () => toast.error('Erro ao atualizar disponibilidade'),
+  })
+
   const isProfissional = profile?.user_type === 'profissional' || profile?.user_type === 'empresa_prestadora'
   const isCompany      = profile?.user_type === 'empresa' || profile?.user_type === 'fornecedor_empresa'
 
@@ -332,11 +366,32 @@ export function ProfilePage() {
     )
   }
 
+  const publicProfileHref =
+    profile.user_type === 'profissional' || profile.user_type === 'empresa_prestadora'
+      ? `/profissional/${user.id}`
+      : profile.user_type === 'fornecedor'
+        ? `/fornecedor/${user.id}`
+        : profile.user_type === 'empresa' || profile.user_type === 'fornecedor_empresa'
+          ? `/empresa/${user.id}`
+          : null
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Meu Perfil</h1>
-        <p className="text-sm text-slate-500 mt-1">Mantenha suas informações atualizadas</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Meu Perfil</h1>
+          <p className="text-sm text-slate-500 mt-1">Mantenha suas informações atualizadas</p>
+        </div>
+        {publicProfileHref && (
+          <Link
+            to={publicProfileHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+          >
+            <ExternalLink size={14} /> Ver perfil público
+          </Link>
+        )}
       </div>
 
       {/* Avatar + basic info */}
@@ -509,6 +564,44 @@ export function ProfilePage() {
           </div>
         </form>
       </div>
+
+      {/* Disponibilidade (profissionais) */}
+      {isProfissional && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <h2 className="font-semibold text-slate-800 mb-4">Disponibilidade</h2>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              {profile?.is_available
+                ? <CheckCircle2 size={20} className="text-green-500 shrink-0" />
+                : <XCircle size={20} className="text-slate-400 shrink-0" />
+              }
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  {profile?.is_available ? 'Disponível para novos projetos' : 'Indisponível no momento'}
+                </p>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {profile?.is_available
+                    ? 'Empresas podem te encontrar e convidar para projetos.'
+                    : 'Seu perfil continua visível, mas indicará que está ocupado.'}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => toggleAvailability.mutate()}
+              disabled={toggleAvailability.isPending}
+              className={cn(
+                'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none',
+                profile?.is_available ? 'bg-green-500' : 'bg-slate-300'
+              )}
+            >
+              <span className={cn(
+                'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                profile?.is_available ? 'translate-x-6' : 'translate-x-1'
+              )} />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Portfolio (profissional / empresa_prestadora) */}
       {isProfissional && <PortfolioSection userId={user.id} />}

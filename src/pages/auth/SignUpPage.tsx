@@ -204,7 +204,7 @@ export function SignUpPage() {
         setUser(authData.user)
         await fetchProfile(authData.user.id)
         toast.success('Conta criada com sucesso!')
-        navigate('/escolher-plano', { replace: true })
+        navigate('/dashboard/home', { replace: true })
       } else {
         // Email de confirmação foi enviado — redireciona para login com aviso
         toast.success('Conta criada! Verifique seu email para ativar o acesso.')
@@ -459,7 +459,7 @@ export function SignUpPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="city" required>Cidade</Label>
                       <Input

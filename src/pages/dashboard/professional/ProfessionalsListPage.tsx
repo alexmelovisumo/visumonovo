@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Search, MapPin, Star, UserCircle, ChevronLeft, BadgeCheck } from 'lucide-react'
+import { Search, MapPin, Star, UserCircle, ChevronLeft, BadgeCheck, Crown, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { USER_TYPE_LABELS, SPECIALTIES } from '@/utils/constants'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
@@ -99,6 +99,16 @@ function ProfessionalCard({ prof }: { prof: ProfessionalWithRating }) {
                 <BadgeCheck size={10} /> Verificado
               </span>
             )}
+            {prof.is_featured && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[10px] font-semibold shrink-0">
+                <Crown size={10} /> Destaque
+              </span>
+            )}
+            {!prof.is_available && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-full text-[10px] font-semibold shrink-0">
+                Ocupado
+              </span>
+            )}
           </div>
           <p className="text-xs text-primary-600 font-medium">
             {USER_TYPE_LABELS[prof.user_type]}
@@ -168,9 +178,10 @@ export function ProfessionalsListPage() {
   const [filterType, setFilterType] = useState('')
   const [filterSpecialty, setFilterSpecialty] = useState('')
   const [onlyVerified, setOnlyVerified] = useState(false)
+  const [onlyAvailable, setOnlyAvailable] = useState(false)
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
 
-  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, filterState, filterType, filterSpecialty, onlyVerified])
+  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, filterState, filterType, filterSpecialty, onlyVerified, onlyAvailable])
 
   const { data: professionals = [], isLoading } = useQuery({
     queryKey: ['professionals-list'],
@@ -188,9 +199,13 @@ export function ProfessionalsListPage() {
     const matchesState     = !filterState     || p.state === filterState
     const matchesType      = !filterType      || p.user_type === filterType
     const matchesSpecialty = !filterSpecialty || (p.specialties ?? []).includes(filterSpecialty)
-    const matchesVerified  = !onlyVerified    || p.is_verified
+    const matchesVerified   = !onlyVerified   || p.is_verified
+    const matchesAvailable  = !onlyAvailable  || p.is_available
 
-    return matchesSearch && matchesState && matchesType && matchesSpecialty && matchesVerified
+    return matchesSearch && matchesState && matchesType && matchesSpecialty && matchesVerified && matchesAvailable
+  }).sort((a, b) => {
+    if (a.is_featured !== b.is_featured) return a.is_featured ? -1 : 1
+    return 0
   })
 
   return (
@@ -260,6 +275,17 @@ export function ProfessionalsListPage() {
         >
           <BadgeCheck size={15} />
           Verificados
+        </button>
+        <button
+          onClick={() => setOnlyAvailable((v) => !v)}
+          className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all shrink-0 ${
+            onlyAvailable
+              ? 'bg-green-600 text-white border-green-600'
+              : 'bg-white text-slate-600 border-slate-200 hover:border-green-300 hover:text-green-600'
+          }`}
+        >
+          <CheckCircle2 size={15} />
+          Disponíveis
         </button>
       </div>
 

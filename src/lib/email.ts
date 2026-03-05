@@ -5,6 +5,7 @@ type EmailType =
   | 'proposta_aceita'
   | 'proposta_recusada'
   | 'projeto_finalizado'
+  | 'cotacao_respondida'
 
 /**
  * Fire-and-forget email notification via Edge Function.
@@ -12,7 +13,7 @@ type EmailType =
  */
 export async function notifyEmail(
   type: EmailType,
-  payload: { proposalId?: string; projectId?: string },
+  payload: { proposalId?: string; projectId?: string; quoteRequestId?: string },
 ) {
   try {
     await supabase.functions.invoke('send-email', {

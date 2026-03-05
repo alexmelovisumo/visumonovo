@@ -8,6 +8,7 @@ import {
   MapPin, Calendar, DollarSign, Eye, Edit2, Trash2,
   ChevronLeft, Clock, CheckCircle2, XCircle, MessageSquare,
   CheckCheck, Paperclip, FileText, Image as ImageIcon, Star,
+  CopyPlus, Share2, ListChecks, Plus, Zap, Crown, UserSearch, BadgeCheck, Send,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -22,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { PROJECT_STATUS_LABELS, PROPOSAL_STATUS_LABELS } from '@/utils/constants'
 import { CompleteProjectModal } from '@/components/common/CompleteProjectModal'
 import { WriteReviewModal } from '@/components/common/WriteReviewModal'
-import type { Project, Proposal, Profile, ProjectAttachment } from '@/types'
+import type { Project, Proposal, Profile, ProjectAttachment, ProjectMilestone } from '@/types'
 
 // ─── Helpers ─────────────────────────────────────────────────
 
@@ -106,7 +107,7 @@ function SendProposalForm({
         {errors.message && <p className="text-xs text-red-500">{errors.message.message}</p>}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label htmlFor="proposed_value" required>Valor proposto (R$)</Label>
           <Input
@@ -313,6 +314,236 @@ function AttachmentsSection({ projectId }: { projectId: string }) {
   )
 }
 
+// ─── Reject Reason Modal ─────────────────────────────────────
+
+function RejectReasonModal({
+  onConfirm,
+  onClose,
+}: {
+  onConfirm: (reason: string) => void
+  onClose: () => void
+}) {
+  const [reason, setReason] = useState('')
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/40 p-4">
+      <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+        <div className="p-5 border-b border-slate-100">
+          <h3 className="font-bold text-slate-900">Recusar proposta</h3>
+          <p className="text-sm text-slate-500 mt-0.5">Informe o motivo (opcional) — será visível ao profissional.</p>
+        </div>
+        <div className="p-5">
+          <textarea
+            className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-300"
+            rows={3}
+            placeholder="Ex: O prazo não atende nossas necessidades..."
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
+        <div className="p-5 border-t border-slate-100 flex gap-3">
+          <button
+            className="flex-1 h-10 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+            onClick={onClose}
+          >
+            Cancelar
+          </button>
+          <button
+            className="flex-1 h-10 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors"
+            onClick={() => onConfirm(reason)}
+          >
+            Recusar proposta
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Milestones Section ───────────────────────────────────────
+
+function MilestonesSection({
+  projectId,
+  isOwner,
+  isParticipant,
+}: {
+  projectId: string
+  isOwner: boolean
+  isParticipant: boolean
+}) {
+  const queryClient = useQueryClient()
+  const [newTitle, setNewTitle] = useState('')
+  const [adding, setAdding] = useState(false)
+
+  const { data: milestones = [] } = useQuery({
+    queryKey: ['milestones', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('position', { ascending: true })
+      if (error) throw error
+      return data as ProjectMilestone[]
+    },
+  })
+
+  const addMilestone = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from('project_milestones').insert({
+        project_id: projectId,
+        title:      newTitle.trim(),
+        position:   milestones.length,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['milestones', projectId] })
+      setNewTitle('')
+      setAdding(false)
+      toast.success('Marco adicionado!')
+    },
+    onError: () => toast.error('Erro ao adicionar marco.'),
+  })
+
+  const toggleMilestone = useMutation({
+    mutationFn: async ({ id, is_done }: { id: string; is_done: boolean }) => {
+      const { error } = await supabase
+        .from('project_milestones')
+        .update({ is_done, updated_at: new Date().toISOString() })
+        .eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['milestones', projectId] }),
+    onError: () => toast.error('Erro ao atualizar marco.'),
+  })
+
+  const deleteMilestone = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('project_milestones').delete().eq('id', id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['milestones', projectId] })
+      toast.success('Marco removido.')
+    },
+    onError: () => toast.error('Erro ao remover marco.'),
+  })
+
+  if (!isOwner && !isParticipant) return null
+
+  const done  = milestones.filter((m) => m.is_done).length
+  const total = milestones.length
+  const pct   = total > 0 ? Math.round((done / total) * 100) : 0
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+          <ListChecks size={16} className="text-primary-500" />
+          Marcos do projeto
+          {total > 0 && (
+            <span className="text-xs text-slate-400 font-normal">
+              {done}/{total} concluídos
+            </span>
+          )}
+        </h2>
+        {isOwner && !adding && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+          >
+            <Plus size={13} /> Adicionar
+          </button>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      {total > 0 && (
+        <div className="mb-4">
+          <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary-500 rounded-full transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-xs text-slate-400 mt-1 text-right">{pct}% concluído</p>
+        </div>
+      )}
+
+      {/* List */}
+      <ul className="space-y-2">
+        {milestones.map((m) => (
+          <li key={m.id} className="flex items-center gap-3 group">
+            <button
+              onClick={() => toggleMilestone.mutate({ id: m.id, is_done: !m.is_done })}
+              className={cn(
+                'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors',
+                m.is_done
+                  ? 'bg-green-500 border-green-500'
+                  : 'border-slate-300 hover:border-primary-400'
+              )}
+            >
+              {m.is_done && <CheckCircle2 size={12} className="text-white" />}
+            </button>
+            <span className={cn(
+              'flex-1 text-sm',
+              m.is_done ? 'text-slate-400 line-through' : 'text-slate-800'
+            )}>
+              {m.title}
+            </span>
+            {isOwner && (
+              <button
+                onClick={() => deleteMilestone.mutate(m.id)}
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-300 hover:text-red-500"
+              >
+                <Trash2 size={13} />
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      {/* Add form */}
+      {isOwner && adding && (
+        <div className="flex gap-2 mt-3">
+          <input
+            autoFocus
+            className="flex-1 h-9 rounded-lg border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="Título do marco..."
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newTitle.trim()) addMilestone.mutate()
+              if (e.key === 'Escape') { setAdding(false); setNewTitle('') }
+            }}
+          />
+          <Button
+            size="sm"
+            disabled={!newTitle.trim()}
+            isLoading={addMilestone.isPending}
+            onClick={() => addMilestone.mutate()}
+          >
+            Salvar
+          </Button>
+          <button
+            onClick={() => { setAdding(false); setNewTitle('') }}
+            className="text-slate-400 hover:text-slate-600 text-sm px-2"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+
+      {total === 0 && !adding && isOwner && (
+        <p className="text-sm text-slate-400 text-center py-4">
+          Nenhum marco ainda. Adicione etapas para acompanhar o progresso.
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 export function ProjectDetailsPage() {
@@ -322,6 +553,7 @@ export function ProjectDetailsPage() {
   const queryClient = useQueryClient()
   const [showCompleteModal, setShowCompleteModal] = useState(false)
   const [showReviewModal, setShowReviewModal] = useState(false)
+  const [rejectingProposalId, setRejectingProposalId] = useState<string | null>(null)
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -369,8 +601,11 @@ export function ProjectDetailsPage() {
   })
 
   const updateProposalStatus = useMutation({
-    mutationFn: async ({ proposalId, status }: { proposalId: string; status: string }) => {
-      const { error } = await supabase.from('proposals').update({ status }).eq('id', proposalId)
+    mutationFn: async ({ proposalId, status, rejection_reason }: { proposalId: string; status: string; rejection_reason?: string }) => {
+      const { error } = await supabase
+        .from('proposals')
+        .update({ status, ...(rejection_reason ? { rejection_reason } : {}) })
+        .eq('id', proposalId)
       if (error) throw error
     },
     onSuccess: (_, { proposalId, status }) => {
@@ -430,6 +665,103 @@ export function ProjectDetailsPage() {
     onError: () => toast.error('Erro ao excluir projeto.'),
   })
 
+  const duplicateProject = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .insert({
+          client_id:   user!.id,
+          title:       `${project!.title} (cópia)`,
+          description: project!.description,
+          budget_min:  project!.budget_min,
+          budget_max:  project!.budget_max,
+          deadline:    project!.deadline,
+          city:        project!.city,
+          state:       project!.state,
+          status:      'open',
+        })
+        .select('id')
+        .single()
+      if (error) throw error
+      return data.id as string
+    },
+    onSuccess: (newId) => {
+      queryClient.invalidateQueries({ queryKey: ['my-projects'] })
+      toast.success('Projeto duplicado!')
+      navigate(`/dashboard/projeto/${newId}`)
+    },
+    onError: () => toast.error('Erro ao duplicar projeto.'),
+  })
+
+  const toggleFeatured = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase
+        .from('projects')
+        .update({ is_featured: !project!.is_featured })
+        .eq('id', project!.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project', id] })
+      toast.success(project!.is_featured ? 'Destaque removido' : 'Projeto em destaque!')
+    },
+    onError: () => toast.error('Erro ao atualizar destaque.'),
+  })
+
+  const { data: suggestedProfs = [] } = useQuery({
+    queryKey: ['suggested-professionals', id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, profile_image_url, specialties, is_verified')
+        .in('user_type', ['profissional', 'empresa_prestadora'])
+        .eq('is_active', true)
+        .eq('is_available', true)
+        .limit(12)
+      return (data ?? []) as { id: string; full_name: string | null; email: string; profile_image_url: string | null; specialties: string[]; is_verified: boolean }[]
+    },
+    enabled: !!id,
+    staleTime: 5 * 60_000,
+  })
+
+  const { data: invitedIds = [] } = useQuery({
+    queryKey: ['project-invited-ids', id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('project_invitations')
+        .select('recipient_id')
+        .eq('project_id', id!)
+      return (data ?? []).map((r) => r.recipient_id as string)
+    },
+    enabled: !!id,
+  })
+
+  const inviteProfessional = useMutation({
+    mutationFn: async (recipientId: string) => {
+      const { error } = await supabase.from('project_invitations').insert({
+        project_id:   id!,
+        sender_id:    user!.id,
+        recipient_id: recipientId,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-invited-ids', id] })
+      toast.success('Convite enviado!')
+    },
+    onError: () => toast.error('Erro ao enviar convite.'),
+  })
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/projeto/${project!.id}`
+    if (navigator.share) {
+      await navigator.share({ title: project!.title, url })
+    } else {
+      await navigator.clipboard.writeText(url)
+      toast.success('Link copiado!')
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -451,6 +783,7 @@ export function ProjectDetailsPage() {
 
   const isOwner        = project.client_id === user?.id
   const isProfissional = profile?.user_type === 'profissional' || profile?.user_type === 'empresa_prestadora'
+  const isAdmin        = profile?.user_type === 'admin'
   const myProposal     = proposals.find((p) => p.professional_id === user?.id)
   const acceptedProposal = proposals.find((p) => p.status === 'accepted')
   const statusLabel    = PROJECT_STATUS_LABELS[project.status] ?? project.status
@@ -481,14 +814,59 @@ export function ProjectDetailsPage() {
               )}>
                 {statusLabel}
               </span>
+              {project.is_urgent && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
+                  <Zap size={9} /> URGENTE
+                </span>
+              )}
+              {project.is_featured && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">
+                  <Crown size={9} /> DESTAQUE
+                </span>
+              )}
               {categories.map((c) => (
                 <span key={c} className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{c}</span>
               ))}
             </div>
             <h1 className="text-xl font-bold text-slate-900">{project.title}</h1>
           </div>
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="outline"
+              className={cn(
+                project.is_featured
+                  ? 'border-amber-300 text-amber-600 hover:bg-amber-50'
+                  : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+              )}
+              onClick={() => toggleFeatured.mutate()}
+              isLoading={toggleFeatured.isPending}
+              title={project.is_featured ? 'Remover destaque' : 'Destacar projeto'}
+            >
+              <Crown size={14} />
+              {project.is_featured ? 'Remover destaque' : 'Destacar'}
+            </Button>
+          )}
           {isOwner && (
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleShare}
+                title="Compartilhar projeto"
+              >
+                <Share2 size={14} />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="border-primary-300 text-primary-600 hover:bg-primary-50"
+                onClick={() => duplicateProject.mutate()}
+                isLoading={duplicateProject.isPending}
+                title="Duplicar projeto"
+              >
+                <CopyPlus size={14} /> Duplicar
+              </Button>
               <Link to={`/dashboard/editar-projeto/${project.id}`}>
                 <Button size="sm" variant="outline"><Edit2 size={14} /> Editar</Button>
               </Link>
@@ -568,6 +946,15 @@ export function ProjectDetailsPage() {
         )}
       </div>
 
+      {/* Milestones — only for active projects */}
+      {(project.status === 'in_progress' || project.status === 'in_negotiation') && (
+        <MilestonesSection
+          projectId={project.id}
+          isOwner={isOwner}
+          isParticipant={!!acceptedProposal && acceptedProposal.professional_id === user?.id}
+        />
+      )}
+
       {/* Images */}
       {images.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
@@ -628,13 +1015,81 @@ export function ProjectDetailsPage() {
                   proposal={p}
                   isOwner={true}
                   onAccept={(pid) => updateProposalStatus.mutate({ proposalId: pid, status: 'accepted' })}
-                  onReject={(pid) => updateProposalStatus.mutate({ proposalId: pid, status: 'rejected' })}
+                  onReject={(pid) => setRejectingProposalId(pid)}
                   onChat={(prop) => openChat.mutate(prop)}
                 />
               ))}
             </div>
           )}
         </div>
+      )}
+
+      {/* Profissionais Sugeridos */}
+      {isOwner && project.status === 'open' && (() => {
+        const shown = suggestedProfs.filter((p) => p.id !== user?.id && !invitedIds.includes(p.id)).slice(0, 6)
+        if (shown.length === 0) return null
+        return (
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+              <UserSearch size={16} className="text-primary-500" />
+              Profissionais sugeridos
+              <span className="text-xs text-slate-400 font-normal">· disponíveis agora</span>
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {shown.map((prof) => {
+                const name = prof.full_name ?? prof.email
+                const initials = name.charAt(0).toUpperCase()
+                const alreadyInvited = invitedIds.includes(prof.id)
+                return (
+                  <div key={prof.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors">
+                    <div className="shrink-0">
+                      {prof.profile_image_url ? (
+                        <img src={prof.profile_image_url} alt={name} className="w-9 h-9 rounded-full object-cover" />
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold">
+                          {initials}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm font-medium text-slate-800 truncate">{name}</p>
+                        {prof.is_verified && <BadgeCheck size={12} className="text-blue-500 shrink-0" />}
+                      </div>
+                      {prof.specialties?.length > 0 && (
+                        <p className="text-[11px] text-slate-400 truncate">{prof.specialties.slice(0, 2).join(' · ')}</p>
+                      )}
+                    </div>
+                    <button
+                      disabled={alreadyInvited || inviteProfessional.isPending}
+                      onClick={() => inviteProfessional.mutate(prof.id)}
+                      className={cn(
+                        'shrink-0 flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition-colors',
+                        alreadyInvited
+                          ? 'text-green-600 bg-green-50 cursor-default'
+                          : 'text-primary-600 bg-primary-50 hover:bg-primary-100'
+                      )}
+                    >
+                      {alreadyInvited ? <CheckCircle2 size={12} /> : <Send size={12} />}
+                      {alreadyInvited ? 'Convidado' : 'Convidar'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* Reject Reason Modal */}
+      {rejectingProposalId && (
+        <RejectReasonModal
+          onConfirm={(reason) => {
+            updateProposalStatus.mutate({ proposalId: rejectingProposalId, status: 'rejected', rejection_reason: reason || undefined })
+            setRejectingProposalId(null)
+          }}
+          onClose={() => setRejectingProposalId(null)}
+        />
       )}
 
       {/* Complete Modal */}

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { PlusCircle, FolderOpen, MapPin, Calendar, MessageSquare, Eye } from 'lucide-react'
+import { PlusCircle, FolderOpen, MapPin, Calendar, MessageSquare, Eye, Search } from 'lucide-react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { supabase } from '@/lib/supabase'
@@ -66,6 +66,16 @@ function ProjectCard({ project }: { project: Project & { proposals_count: number
   )
 }
 
+// ─── Sort options ─────────────────────────────────────────────
+
+type SortKey = 'recent' | 'proposals' | 'deadline'
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'recent',    label: 'Mais recentes' },
+  { key: 'proposals', label: 'Mais propostas' },
+  { key: 'deadline',  label: 'Prazo próximo' },
+]
+
 // ─── Filter Tabs ──────────────────────────────────────────────
 
 const FILTERS = [
@@ -80,7 +90,9 @@ const FILTERS = [
 
 export function MyProjectsPage() {
   const { user } = useAuthStore()
-  const [filter, setFilter] = useState('all')
+  const [filter,  setFilter]  = useState('all')
+  const [search,  setSearch]  = useState('')
+  const [sortBy,  setSortBy]  = useState<SortKey>('recent')
 
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ['my-projects', user?.id],
@@ -101,7 +113,27 @@ export function MyProjectsPage() {
     enabled: !!user?.id,
   })
 
-  const filtered = filter === 'all' ? projects : projects.filter((p) => p.status === filter)
+  const filtered = useMemo(() => {
+    let list = filter === 'all' ? projects : projects.filter((p) => p.status === filter)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter((p) =>
+        p.title.toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q)
+      )
+    }
+    if (sortBy === 'proposals') {
+      list = [...list].sort((a, b) => b.proposals_count - a.proposals_count)
+    } else if (sortBy === 'deadline') {
+      list = [...list].sort((a, b) => {
+        if (!a.deadline) return 1
+        if (!b.deadline) return -1
+        return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+      })
+    }
+    // 'recent' mantém ordem do servidor (created_at desc)
+    return list
+  }, [projects, filter, search, sortBy])
 
   return (
     <div className="space-y-6">
@@ -148,6 +180,31 @@ export function MyProjectsPage() {
         })}
       </div>
 
+      {/* Search + sort */}
+      {projects.length > 0 && (
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar por título ou descrição..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full h-10 pl-8 pr-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-400"
+            />
+          </div>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortKey)}
+            className="h-10 rounded-xl border border-slate-200 text-sm px-3 text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-400 bg-white"
+          >
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.key} value={o.key}>{o.label}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {/* Content */}
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -159,14 +216,20 @@ export function MyProjectsPage() {
             <FolderOpen size={28} className="text-slate-400" />
           </div>
           <h3 className="font-semibold text-slate-700 mb-1">
-            {filter === 'all' ? 'Nenhum projeto ainda' : 'Nenhum projeto neste status'}
+            {projects.length === 0
+              ? 'Nenhum projeto ainda'
+              : search.trim()
+                ? 'Nenhum resultado para esta busca'
+                : 'Nenhum projeto neste status'}
           </h3>
           <p className="text-sm text-slate-400 mb-6">
-            {filter === 'all'
+            {projects.length === 0
               ? 'Publique seu primeiro projeto e receba propostas.'
-              : 'Tente outro filtro.'}
+              : search.trim()
+                ? 'Tente outros termos ou limpe a busca.'
+                : 'Tente outro filtro.'}
           </p>
-          {filter === 'all' && (
+          {projects.length === 0 && (
             <Link to="/dashboard/criar-projeto">
               <Button>
                 <PlusCircle size={16} />

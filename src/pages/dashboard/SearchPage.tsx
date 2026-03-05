@@ -1,10 +1,12 @@
+import { useState, useMemo } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Search, FolderOpen, Users, Package,
-  MapPin, DollarSign, BadgeCheck,
+  MapPin, DollarSign, BadgeCheck, SlidersHorizontal, X,
 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -37,6 +39,8 @@ interface ProductResult {
   category: string | null
   supplier_id: string
 }
+
+type Tab = 'all' | 'projects' | 'professionals' | 'products'
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -153,7 +157,7 @@ function ProfCard({ p }: { p: ProfessionalResult }) {
 function ProductCard({ p }: { p: ProductResult }) {
   return (
     <Link
-      to={`/dashboard/fornecedores`}
+      to={`/dashboard/fornecedor/${p.supplier_id}`}
       className="bg-white rounded-xl border border-slate-200 p-4 hover:border-primary-300 hover:shadow-sm transition-all block"
     >
       <div className="flex items-start gap-3">
@@ -182,9 +186,20 @@ function EmptyGroup({ label }: { label: string }) {
 
 // ─── Page ─────────────────────────────────────────────────────
 
+const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: 'all',           label: 'Todos',         icon: <Search size={13} /> },
+  { key: 'projects',      label: 'Projetos',       icon: <FolderOpen size={13} /> },
+  { key: 'professionals', label: 'Profissionais',  icon: <Users size={13} /> },
+  { key: 'products',      label: 'Produtos',       icon: <Package size={13} /> },
+]
+
 export function SearchPage() {
   const [params] = useSearchParams()
   const q = (params.get('q') ?? '').trim()
+
+  const [activeTab,   setActiveTab]   = useState<Tab>('all')
+  const [stateFilter, setStateFilter] = useState('')
+  const [verifiedOnly, setVerifiedOnly] = useState(false)
 
   const { data, isLoading } = useQuery({
     queryKey: ['full-search', q],
@@ -193,10 +208,42 @@ export function SearchPage() {
     staleTime: 15_000,
   })
 
-  const total = (data?.projects.length ?? 0) + (data?.professionals.length ?? 0) + (data?.products.length ?? 0)
+  // Unique states from all results for the dropdown
+  const states = useMemo(() => {
+    const set = new Set<string>()
+    data?.projects.forEach((p) => p.state && set.add(p.state))
+    data?.professionals.forEach((p) => p.state && set.add(p.state))
+    return [...set].sort()
+  }, [data])
+
+  // Filtered slices
+  const filteredProjects = useMemo(() =>
+    (data?.projects ?? []).filter((p) => !stateFilter || p.state === stateFilter),
+    [data, stateFilter],
+  )
+  const filteredProfs = useMemo(() =>
+    (data?.professionals ?? []).filter((p) =>
+      (!stateFilter || p.state === stateFilter) &&
+      (!verifiedOnly || p.is_verified),
+    ),
+    [data, stateFilter, verifiedOnly],
+  )
+  const filteredProducts = data?.products ?? []
+
+  const total =
+    (activeTab === 'all' || activeTab === 'projects'      ? filteredProjects.length : 0) +
+    (activeTab === 'all' || activeTab === 'professionals' ? filteredProfs.length    : 0) +
+    (activeTab === 'all' || activeTab === 'products'      ? filteredProducts.length : 0)
+
+  const hasFilters = stateFilter || verifiedOnly
+
+  const clearFilters = () => {
+    setStateFilter('')
+    setVerifiedOnly(false)
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
@@ -214,6 +261,75 @@ export function SearchPage() {
         </p>
       </div>
 
+      {/* Filters row */}
+      {data && (
+        <div className="flex flex-col gap-3">
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium transition-colors border',
+                  activeTab === t.key
+                    ? 'bg-primary-600 text-white border-primary-600'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-primary-300'
+                )}
+              >
+                {t.icon} {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Advanced filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
+              <SlidersHorizontal size={13} /> Filtros:
+            </div>
+
+            {/* State */}
+            {states.length > 0 && (
+              <select
+                value={stateFilter}
+                onChange={(e) => setStateFilter(e.target.value)}
+                className="h-8 px-2.5 rounded-lg border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+              >
+                <option value="">Todos os estados</option>
+                {states.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            )}
+
+            {/* Verified only (profissionais context) */}
+            {(activeTab === 'all' || activeTab === 'professionals') && (
+              <button
+                onClick={() => setVerifiedOnly((v) => !v)}
+                className={cn(
+                  'flex items-center gap-1.5 h-8 px-3 rounded-lg text-xs font-medium border transition-colors',
+                  verifiedOnly
+                    ? 'bg-blue-50 text-blue-700 border-blue-200'
+                    : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300'
+                )}
+              >
+                <BadgeCheck size={12} /> Verificados
+              </button>
+            )}
+
+            {/* Clear */}
+            {hasFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 h-8 px-2.5 rounded-lg text-xs text-slate-400 hover:text-slate-600 border border-slate-200 transition-colors"
+              >
+                <X size={11} /> Limpar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {isLoading && (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
@@ -221,55 +337,61 @@ export function SearchPage() {
       )}
 
       {!isLoading && data && (
-        <>
+        <div className="space-y-8">
           {/* Projects */}
-          <section>
-            <SectionHeader
-              icon={<FolderOpen size={16} className="text-primary-600" />}
-              title="Projetos abertos"
-              count={data.projects.length}
-            />
-            {data.projects.length === 0 ? (
-              <EmptyGroup label="projeto" />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {data.projects.map((p) => <ProjectCard key={p.id} p={p} />)}
-              </div>
-            )}
-          </section>
+          {(activeTab === 'all' || activeTab === 'projects') && (
+            <section>
+              <SectionHeader
+                icon={<FolderOpen size={16} className="text-primary-600" />}
+                title="Projetos abertos"
+                count={filteredProjects.length}
+              />
+              {filteredProjects.length === 0 ? (
+                <EmptyGroup label="projeto" />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredProjects.map((p) => <ProjectCard key={p.id} p={p} />)}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Professionals */}
-          <section>
-            <SectionHeader
-              icon={<Users size={16} className="text-green-600" />}
-              title="Profissionais"
-              count={data.professionals.length}
-            />
-            {data.professionals.length === 0 ? (
-              <EmptyGroup label="profissional" />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {data.professionals.map((p) => <ProfCard key={p.id} p={p} />)}
-              </div>
-            )}
-          </section>
+          {(activeTab === 'all' || activeTab === 'professionals') && (
+            <section>
+              <SectionHeader
+                icon={<Users size={16} className="text-green-600" />}
+                title="Profissionais"
+                count={filteredProfs.length}
+              />
+              {filteredProfs.length === 0 ? (
+                <EmptyGroup label="profissional" />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filteredProfs.map((p) => <ProfCard key={p.id} p={p} />)}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Products */}
-          <section>
-            <SectionHeader
-              icon={<Package size={16} className="text-amber-600" />}
-              title="Produtos / Fornecedores"
-              count={data.products.length}
-            />
-            {data.products.length === 0 ? (
-              <EmptyGroup label="produto" />
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {data.products.map((p) => <ProductCard key={p.id} p={p} />)}
-              </div>
-            )}
-          </section>
-        </>
+          {(activeTab === 'all' || activeTab === 'products') && (
+            <section>
+              <SectionHeader
+                icon={<Package size={16} className="text-amber-600" />}
+                title="Produtos / Fornecedores"
+                count={filteredProducts.length}
+              />
+              {filteredProducts.length === 0 ? (
+                <EmptyGroup label="produto" />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {filteredProducts.map((p) => <ProductCard key={p.id} p={p} />)}
+                </div>
+              )}
+            </section>
+          )}
+        </div>
       )}
     </div>
   )

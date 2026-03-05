@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, Save } from 'lucide-react'
+import { ChevronLeft, Save, ListChecks, Plus, Trash2, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,7 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { BR_STATES } from '@/utils/constants'
-import type { Project, ProjectCategory } from '@/types'
+import type { Project, ProjectCategory, ProjectMilestone } from '@/types'
 
 const schema = z.object({
   title:       z.string().min(5, 'Título deve ter pelo menos 5 caracteres'),
@@ -35,6 +35,7 @@ export function EditProjectPage() {
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [newMilestone, setNewMilestone]             = useState('')
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['project', id],
@@ -61,6 +62,56 @@ export function EditProjectPage() {
       if (error) throw error
       return data as ProjectCategory[]
     },
+  })
+
+  const { data: milestones = [], refetch: refetchMilestones } = useQuery({
+    queryKey: ['milestones', id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('project_milestones')
+        .select('*')
+        .eq('project_id', id!)
+        .order('position', { ascending: true })
+      if (error) throw error
+      return data as ProjectMilestone[]
+    },
+    enabled: !!id,
+  })
+
+  const addMilestone = useMutation({
+    mutationFn: async (title: string) => {
+      const { error } = await supabase.from('project_milestones').insert({
+        project_id: id!,
+        title:      title.trim(),
+        position:   milestones.length,
+      })
+      if (error) throw error
+    },
+    onSuccess: () => { setNewMilestone(''); refetchMilestones() },
+    onError:   () => toast.error('Erro ao adicionar marco'),
+  })
+
+  const toggleMilestone = useMutation({
+    mutationFn: async ({ milestoneId, isDone }: { milestoneId: string; isDone: boolean }) => {
+      const { error } = await supabase
+        .from('project_milestones')
+        .update({ is_done: isDone })
+        .eq('id', milestoneId)
+      if (error) throw error
+    },
+    onSuccess: () => refetchMilestones(),
+  })
+
+  const deleteMilestone = useMutation({
+    mutationFn: async (milestoneId: string) => {
+      const { error } = await supabase
+        .from('project_milestones')
+        .delete()
+        .eq('id', milestoneId)
+      if (error) throw error
+    },
+    onSuccess: () => refetchMilestones(),
+    onError:   () => toast.error('Erro ao remover marco'),
   })
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -189,7 +240,7 @@ export function EditProjectPage() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="budget_min">Orçamento mínimo (R$)</Label>
               <Input id="budget_min" type="number" min="0" step="0.01" {...register('budget_min')} />
@@ -208,7 +259,7 @@ export function EditProjectPage() {
 
         <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
           <h2 className="font-semibold text-slate-800">Localização</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="city" required>Cidade</Label>
               <Input id="city" error={errors.city?.message} {...register('city')} />
@@ -262,6 +313,81 @@ export function EditProjectPage() {
           </Button>
         </div>
       </form>
+
+      {/* Milestones — edição independente do form */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 pb-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-slate-800 flex items-center gap-2">
+            <ListChecks size={16} className="text-primary-500" />
+            Marcos de progresso
+          </h2>
+          {milestones.length > 0 && (
+            <span className="text-xs text-slate-400">
+              {milestones.filter((m) => m.is_done).length}/{milestones.length} concluídos
+            </span>
+          )}
+        </div>
+
+        {milestones.length > 0 && (
+          <div className="space-y-2">
+            {milestones.map((m) => (
+              <div key={m.id} className="flex items-center gap-3 group">
+                <button
+                  type="button"
+                  onClick={() => toggleMilestone.mutate({ milestoneId: m.id, isDone: !m.is_done })}
+                  className="shrink-0"
+                >
+                  <CheckCircle2
+                    size={18}
+                    className={m.is_done
+                      ? 'fill-primary-600 text-primary-600'
+                      : 'text-slate-300 hover:text-primary-400 transition-colors'}
+                  />
+                </button>
+                <span className={cn(
+                  'flex-1 text-sm',
+                  m.is_done ? 'line-through text-slate-400' : 'text-slate-700'
+                )}>
+                  {m.title}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteMilestone.mutate(m.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-red-500"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new milestone */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMilestone}
+            onChange={(e) => setNewMilestone(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newMilestone.trim()) {
+                e.preventDefault()
+                addMilestone.mutate(newMilestone)
+              }
+            }}
+            placeholder="Adicionar marco... (Enter para confirmar)"
+            className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500"
+          />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!newMilestone.trim() || addMilestone.isPending}
+            onClick={() => addMilestone.mutate(newMilestone)}
+          >
+            <Plus size={15} />
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
