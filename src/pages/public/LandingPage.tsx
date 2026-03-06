@@ -47,9 +47,8 @@ function Hero() {
         </div>
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
-          <span className="gradient-text">Comunicação Visual</span>
-          {' '}Conectamos quem precisa
-          {' com quem faz acontecer'}
+          <span className="gradient-text block">Comunicação Visual</span>
+          Conectamos quem precisa com quem faz acontecer
         </h1>
 
         <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
