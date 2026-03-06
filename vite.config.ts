@@ -15,7 +15,7 @@ export default defineConfig({
         name: 'Visumo',
         short_name: 'Visumo',
         description: 'Marketplace de comunicação visual',
-        theme_color: '#4f46e5',
+        theme_color: '#0284c7',
         background_color: '#ffffff',
         display: 'standalone',
         orientation: 'portrait-primary',
