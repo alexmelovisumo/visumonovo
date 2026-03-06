@@ -48,7 +48,7 @@ function Hero() {
 
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
           <span className="gradient-text">Comunicação Visual</span>
-          {' — '}Conectamos quem precisa
+          {' '}Conectamos quem precisa
           {' com quem faz acontecer'}
         </h1>
 
