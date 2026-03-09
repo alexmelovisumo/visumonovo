@@ -41,6 +41,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (!error && data) {
       set({ profile: data })
+      return
+    }
+
+    // Profile row missing (trigger race or failure) — create it from auth metadata
+    if (error?.code === 'PGRST116') {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const meta = user.user_metadata ?? {}
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            email: user.email ?? '',
+            user_type: meta.user_type ?? 'empresa',
+            full_name: meta.full_name ?? null,
+            phone: meta.phone ?? null,
+            city: meta.city ?? null,
+            state: meta.state ?? null,
+            company_name: meta.company_name ?? null,
+          })
+          .select('*')
+          .single()
+        if (newProfile) set({ profile: newProfile })
+      }
     }
   },
 

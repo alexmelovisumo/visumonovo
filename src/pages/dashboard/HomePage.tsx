@@ -1229,12 +1229,24 @@ export function HomePage() {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-4">
         <p className="text-slate-500 text-sm">Não foi possível carregar seu perfil.</p>
-        <button
-          onClick={() => { setRetries(0) }}
-          className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700 transition-colors"
-        >
-          Tentar novamente
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => { setRetries(0) }}
+            className="px-4 py-2 rounded-lg bg-primary-600 text-white text-sm hover:bg-primary-700 transition-colors"
+          >
+            Tentar novamente
+          </button>
+          <button
+            onClick={async () => {
+              const { signOut } = useAuthStore.getState()
+              await signOut()
+              window.location.href = '/login'
+            }}
+            className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm hover:bg-slate-50 transition-colors"
+          >
+            Sair
+          </button>
+        </div>
       </div>
     )
   }
