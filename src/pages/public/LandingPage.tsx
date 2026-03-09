@@ -2,32 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, CheckCircle2, Building2, Wrench, Package,
-  Search, Handshake, Star, ChevronRight, Zap,
+  Search, Handshake, Star, ChevronRight,
   ShoppingBag, Layers, ChevronDown,
 } from 'lucide-react'
-
-// ─── WhatsApp Button ──────────────────────────────────────────
-// Troque pelo seu número com DDD: ex. 5511999999999
-const WHATSAPP_NUMBER = '5554981678045'
-const WHATSAPP_MSG = encodeURIComponent('Olá! Tenho uma dúvida sobre o Visumo.')
-
-function WhatsAppButton() {
-  return (
-    <a
-      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${WHATSAPP_MSG}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold text-sm px-4 py-3 rounded-full shadow-xl transition-all hover:scale-105 active:scale-95"
-      aria-label="Falar pelo WhatsApp"
-    >
-      {/* WhatsApp SVG icon */}
-      <svg viewBox="0 0 32 32" className="w-5 h-5 fill-white shrink-0" xmlns="http://www.w3.org/2000/svg">
-        <path d="M16 2C8.28 2 2 8.28 2 16c0 2.49.66 4.82 1.8 6.84L2 30l7.38-1.77A13.93 13.93 0 0016 30c7.72 0 14-6.28 14-14S23.72 2 16 2zm0 25.4a11.36 11.36 0 01-5.78-1.58l-.41-.25-4.38 1.05 1.08-4.26-.27-.44A11.38 11.38 0 014.6 16c0-6.28 5.12-11.4 11.4-11.4S27.4 9.72 27.4 16 22.28 27.4 16 27.4zm6.26-8.54c-.34-.17-2.02-1-2.34-1.11-.32-.11-.55-.17-.78.17s-.9 1.11-1.1 1.34-.4.26-.74.09a9.34 9.34 0 01-2.75-1.7 10.3 10.3 0 01-1.9-2.37c-.2-.34 0-.52.15-.69.14-.15.34-.4.51-.6.17-.2.23-.34.34-.57.11-.23.06-.43-.03-.6-.08-.17-.78-1.88-1.07-2.57-.28-.67-.57-.58-.78-.59H11c-.2 0-.52.07-.79.37-.28.3-1.06 1.03-1.06 2.52s1.09 2.92 1.24 3.12c.15.2 2.14 3.27 5.19 4.58.73.31 1.3.5 1.74.64.73.23 1.4.2 1.92.12.59-.09 1.8-.74 2.06-1.45.25-.71.25-1.32.17-1.45-.07-.13-.28-.2-.62-.37z"/>
-      </svg>
-      Falar pelo WhatsApp
-    </a>
-  )
-}
 
 // ─── Nav ──────────────────────────────────────────────────────
 
@@ -473,7 +450,6 @@ export function LandingPage() {
       <FAQ />
       <CTA />
       <Footer />
-      <WhatsAppButton />
     </div>
   )
 }
