@@ -65,11 +65,6 @@ function Hero() {
   return (
     <section className="pt-28 pb-16 px-4 sm:px-6 text-center bg-gradient-to-b from-primary-50 via-white to-white">
       <div className="max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-          <Zap size={12} />
-          Nunca mais perca um serviço por falta de mão de obra.
-        </div>
-
         <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 leading-tight mb-6">
           <span className="gradient-text block">Comunicação Visual</span>
           Conectamos quem precisa com quem faz acontecer
