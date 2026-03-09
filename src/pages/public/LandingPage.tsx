@@ -8,7 +8,7 @@ import {
 
 // ─── WhatsApp Button ──────────────────────────────────────────
 // Troque pelo seu número com DDD: ex. 5511999999999
-const WHATSAPP_NUMBER = '5511999999999'
+const WHATSAPP_NUMBER = '5554981678045'
 const WHATSAPP_MSG = encodeURIComponent('Olá! Tenho uma dúvida sobre o Visumo.')
 
 function WhatsAppButton() {
