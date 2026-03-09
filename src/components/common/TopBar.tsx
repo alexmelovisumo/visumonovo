@@ -160,7 +160,6 @@ interface TopBarProps {
 export function TopBar({ onMenuClick }: TopBarProps) {
   const { profile, user, signOut } = useAuthStore()
   const queryClient = useQueryClient()
-  const navigate = useNavigate()
   const [menuOpen, setMenuOpen]   = useState(false)
   const [bellOpen, setBellOpen]   = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
