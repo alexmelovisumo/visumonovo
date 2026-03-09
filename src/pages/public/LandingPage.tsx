@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowRight, CheckCircle2, Building2, Wrench, Package,
   Search, Handshake, Star, ChevronRight, Zap,
-  ShoppingBag, Layers,
+  ShoppingBag, Layers, ChevronDown,
 } from 'lucide-react'
 
 // ─── Nav ──────────────────────────────────────────────────────
@@ -43,15 +44,15 @@ function Hero() {
       <div className="max-w-4xl mx-auto">
         <div className="inline-flex items-center gap-2 bg-primary-100 text-primary-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
           <Zap size={12} />
-          Marketplace B2B de Comunicação Visual
+          Nunca mais perca um serviço por falta de mão de obra.
         </div>
 
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-slate-900 leading-tight mb-6">
+        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 leading-tight mb-6">
           <span className="gradient-text block">Comunicação Visual</span>
           Conectamos quem precisa com quem faz acontecer
         </h1>
 
-        <p className="text-lg sm:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
+        <p className="text-xl sm:text-2xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed">
           Empresas publicam projetos. Profissionais enviam propostas.
           Fornecedores oferecem materiais. Tudo em um só lugar.
         </p>
@@ -126,7 +127,7 @@ function UserTypeCard({
 }) {
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:-translate-y-0.5 transition-all group">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${color}`}>
+      <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${color}`}>
         {icon}
       </div>
       <h3 className="text-lg font-bold text-slate-900 mb-1">{title}</h3>
@@ -152,7 +153,7 @@ function UserTypeCard({
 function UserTypes() {
   const types = [
     {
-      icon: <Wrench size={24} className="text-amber-600" />,
+      icon: <Wrench size={28} className="text-amber-600" />,
       title: 'Profissional',
       subtitle: 'Presta serviços de comunicação visual',
       color: 'bg-amber-50',
@@ -164,7 +165,7 @@ function UserTypes() {
       ],
     },
     {
-      icon: <Package size={24} className="text-green-600" />,
+      icon: <Package size={28} className="text-green-600" />,
       title: 'Fornecedor',
       subtitle: 'Vende materiais e insumos para o setor',
       color: 'bg-green-50',
@@ -176,19 +177,19 @@ function UserTypes() {
       ],
     },
     {
-      icon: <Building2 size={24} className="text-violet-600" />,
+      icon: <Building2 size={28} className="text-violet-600" />,
       title: 'Empresa',
       subtitle: 'Contrata serviços de comunicação visual',
       color: 'bg-violet-50',
       benefits: [
-        'Publique projetos gratuitamente',
+        'Publique e gerencie projetos',
         'Receba propostas de profissionais',
         'Gerencie negociações em um só lugar',
         'Chat direto com os prestadores',
       ],
     },
     {
-      icon: <ShoppingBag size={24} className="text-blue-600" />,
+      icon: <ShoppingBag size={28} className="text-blue-600" />,
       title: 'Fornecedor/Empresa',
       subtitle: 'Fornece materiais e também contrata serviços',
       color: 'bg-blue-50',
@@ -200,7 +201,7 @@ function UserTypes() {
       ],
     },
     {
-      icon: <Layers size={24} className="text-rose-600" />,
+      icon: <Layers size={28} className="text-rose-600" />,
       title: 'Empresa Prestadora',
       subtitle: 'Empresa que também presta serviços ao mercado',
       color: 'bg-rose-50',
@@ -241,7 +242,7 @@ function HowItWorks() {
       number: '01',
       icon: <Building2 size={20} className="text-primary-600" />,
       title: 'Empresa publica projeto',
-      desc: 'Descreva o serviço que precisa, defina orçamento e prazo. É gratuito.',
+      desc: 'Descreva o serviço que precisa, defina orçamento e prazo.',
     },
     {
       number: '02',
@@ -324,6 +325,74 @@ function Features() {
   )
 }
 
+// ─── FAQ ─────────────────────────────────────────────────────
+
+const FAQ_ITEMS = [
+  {
+    q: 'O Visumo é gratuito?',
+    a: 'O Visumo funciona por assinatura anual. Você escolhe o plano ideal para o seu perfil (profissional, empresa ou fornecedor) e durante o ano todo pode fazer quantas negociações quiser sem custo adicional.',
+  },
+  {
+    q: 'Como funciona para profissionais de comunicação visual?',
+    a: 'Você cria seu perfil, adiciona suas especialidades e portfólio, e passa a receber oportunidades de projetos na sua região. Envie propostas, negocie diretamente com a empresa e construa sua reputação com avaliações reais.',
+  },
+  {
+    q: 'Uma empresa pode publicar projetos e receber propostas?',
+    a: 'Sim! Empresas publicam projetos descrevendo o serviço, orçamento e prazo. Profissionais qualificados da região enviam propostas, e você escolhe a melhor via chat direto na plataforma.',
+  },
+  {
+    q: 'Fornecedores também podem usar o Visumo?',
+    a: 'Sim. Fornecedores criam um catálogo de produtos e materiais visível para profissionais e empresas de todo o Brasil. Compradores entram em contato diretamente pelo sistema de cotações.',
+  },
+  {
+    q: 'Os pagamentos são seguros?',
+    a: 'As assinaturas são processadas pelo PagBank, um dos maiores meios de pagamento do Brasil, com total segurança. As negociações entre empresa e profissional são gerenciadas diretamente entre as partes.',
+  },
+  {
+    q: 'Posso cancelar meu plano?',
+    a: 'Os planos são anuais. Você pode cancelar a renovação automática a qualquer momento pelo painel de assinatura, mantendo acesso até o fim do período pago.',
+  },
+]
+
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="border-b border-slate-200 last:border-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between gap-4 py-5 text-left"
+      >
+        <span className="font-semibold text-slate-900 text-base">{q}</span>
+        <ChevronDown
+          size={18}
+          className={`shrink-0 text-primary-500 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+        />
+      </button>
+      {open && (
+        <p className="text-slate-500 text-sm leading-relaxed pb-5">{a}</p>
+      )}
+    </div>
+  )
+}
+
+function FAQ() {
+  return (
+    <section className="py-20 px-4 sm:px-6 bg-slate-50">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Perguntas frequentes</h2>
+          <p className="text-slate-500 text-lg">Tire suas dúvidas sobre o Visumo</p>
+        </div>
+        <div className="bg-white rounded-2xl border border-slate-200 px-6 divide-y-0">
+          {FAQ_ITEMS.map((item) => (
+            <FaqItem key={item.q} {...item} />
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 // ─── CTA ─────────────────────────────────────────────────────
 
 function CTA() {
@@ -332,7 +401,7 @@ function CTA() {
       <div className="max-w-2xl mx-auto text-center">
         <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-4">Pronto para começar?</h2>
         <p className="text-slate-500 text-lg mb-8">
-          Crie sua conta gratuitamente e faça parte do maior marketplace de
+          Escolha seu plano e faça parte do maior marketplace de
           comunicação visual do Brasil.
         </p>
         <Link
@@ -383,6 +452,7 @@ export function LandingPage() {
       <UserTypes />
       <HowItWorks />
       <Features />
+      <FAQ />
       <CTA />
       <Footer />
     </div>

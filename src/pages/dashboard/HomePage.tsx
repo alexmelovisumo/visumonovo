@@ -1202,21 +1202,21 @@ export function HomePage() {
   const { profile, user, fetchProfile, isLoading } = useAuthStore()
   const [retries, setRetries] = useState(0)
 
-  // Recupera profile se estiver null — faz até 5 tentativas com intervalo de 1.5s
+  // Recupera profile se estiver null — faz até 10 tentativas com intervalo de 2s
   useEffect(() => {
     if (!user || profile) return
-    if (retries >= 5) return
+    if (retries >= 10) return
 
     const timer = setTimeout(async () => {
       await fetchProfile(user.id)
       setRetries((r) => r + 1)
-    }, retries === 0 ? 0 : 1500)
+    }, retries === 0 ? 500 : 2000)
 
     return () => clearTimeout(timer)
   }, [user, profile, fetchProfile, retries])
 
   // Ainda carregando
-  if (isLoading || (!profile && retries < 5)) {
+  if (isLoading || (!profile && retries < 10)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="w-8 h-8 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />

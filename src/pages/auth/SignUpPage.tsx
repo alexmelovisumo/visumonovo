@@ -202,6 +202,8 @@ export function SignUpPage() {
       // 2. Se a sessão existir (confirmação de email desativada), carrega perfil
       if (authData.session) {
         setUser(authData.user)
+        // Aguarda o trigger handle_new_user criar o perfil no banco
+        await new Promise(r => setTimeout(r, 2000))
         await fetchProfile(authData.user.id)
         toast.success('Conta criada com sucesso!')
         navigate('/dashboard/home', { replace: true })
