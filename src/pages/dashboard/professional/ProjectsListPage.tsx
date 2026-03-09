@@ -245,10 +245,10 @@ export function ProjectsListPage() {
 
   const filtered = projects
     .filter((p) => {
-      // Location filter: only show projects in covered cities
+      // Location filter: only show projects in covered cities (exact match)
       if (!myAreaOnly || !hasCoverage) return true
-      const projectCity = p.city?.toLowerCase() ?? ''
-      return coveredCities.some((c) => projectCity.includes(c) || c.includes(projectCity))
+      const projectCity = p.city?.toLowerCase().trim() ?? ''
+      return coveredCities.some((c) => c.trim() === projectCity)
     })
     .filter((p) => {
       if (!search) return true
