@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { MapContainer, TileLayer, Circle, Marker, useMapEvents, useMap } from 'react-leaflet'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { MapPin, Navigation, Plus, X, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -8,24 +11,56 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { BR_STATES } from '@/utils/constants'
 
+// Fix leaflet default marker icons
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (L.Icon.Default.prototype as any)._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+  iconUrl:       'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+})
+
+// ─── Map helpers ─────────────────────────────────────────────
+
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number) => void }) {
+  useMapEvents({ click: (e) => onMapClick(e.latlng.lat, e.latlng.lng) })
+  return null
+}
+
+function MapRecenter({ position }: { position: [number, number] }) {
+  const map = useMap()
+  useEffect(() => { map.setView(position) }, [position, map])
+  return null
+}
+
+function MapZoom({ radius }: { radius: number }) {
+  const map = useMap()
+  useEffect(() => {
+    const zoom = radius <= 20 ? 12 : radius <= 60 ? 10 : radius <= 120 ? 9 : radius <= 250 ? 8 : 7
+    map.setZoom(zoom)
+  }, [radius, map])
+  return null
+}
+
+// ─── Page ─────────────────────────────────────────────────────
+
+const DEFAULT_POS: [number, number] = [-29.1678, -51.1794] // Caxias do Sul, RS
+
 export function LocationSetupPage() {
   const { user, profile, fetchProfile } = useAuthStore()
 
-  // Form state — inicializa com valores do perfil
   const [city,   setCity]   = useState(profile?.city   ?? '')
   const [state,  setState]  = useState(profile?.state  ?? '')
   const [radius, setRadius] = useState(profile?.coverage_radius_km ?? 50)
   const [lat,    setLat]    = useState<number | null>(profile?.latitude  ?? null)
   const [lng,    setLng]    = useState<number | null>(profile?.longitude ?? null)
 
-  // Cidades adicionais fora do raio
   const [extraCities, setExtraCities] = useState<string[]>(profile?.coverage_cities ?? [])
   const [newCity, setNewCity] = useState('')
 
-  const [saving,   setSaving]   = useState(false)
+  const [saving,     setSaving]     = useState(false)
   const [geoLoading, setGeoLoading] = useState(false)
 
-  // Sincroniza quando profile carrega
   useEffect(() => {
     if (!profile) return
     setCity(profile.city   ?? '')
@@ -36,6 +71,13 @@ export function LocationSetupPage() {
     setExtraCities(profile.coverage_cities ?? [])
   }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const mapPosition: [number, number] = lat && lng ? [lat, lng] : DEFAULT_POS
+
+  const handleMapClick = (clickLat: number, clickLng: number) => {
+    setLat(clickLat)
+    setLng(clickLng)
+  }
+
   const handleGeolocate = () => {
     if (!navigator.geolocation) { toast.error('Geolocalização não suportada neste navegador.'); return }
     setGeoLoading(true)
@@ -44,7 +86,6 @@ export function LocationSetupPage() {
         const { latitude, longitude } = pos.coords
         setLat(latitude)
         setLng(longitude)
-        // Reverse geocode via nominatim
         try {
           const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&accept-language=pt`)
           const data = await res.json()
@@ -68,14 +109,14 @@ export function LocationSetupPage() {
   const addExtraCity = () => {
     const trimmed = newCity.trim()
     if (!trimmed) return
-    if (extraCities.includes(trimmed)) { toast.error('Cidade já adicionada.'); return }
+    if (extraCities.map((c) => c.toLowerCase()).includes(trimmed.toLowerCase())) {
+      toast.error('Cidade já adicionada.'); return
+    }
     setExtraCities((prev) => [...prev, trimmed])
     setNewCity('')
   }
 
-  const removeExtraCity = (c: string) => {
-    setExtraCities((prev) => prev.filter((x) => x !== c))
-  }
+  const removeExtraCity = (c: string) => setExtraCities((prev) => prev.filter((x) => x !== c))
 
   const handleSave = async () => {
     if (!city.trim() || !state.trim()) { toast.error('Informe sua cidade e estado.'); return }
@@ -149,15 +190,9 @@ export function LocationSetupPage() {
         >
           <Navigation size={15} /> Usar minha localização atual (GPS)
         </Button>
-
-        {lat && lng && (
-          <p className="text-xs text-slate-400 text-center">
-            Coordenadas salvas: {lat.toFixed(4)}, {lng.toFixed(4)}
-          </p>
-        )}
       </div>
 
-      {/* Raio de atuação */}
+      {/* Raio de atuação + Mapa */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-slate-800 font-semibold">
@@ -185,6 +220,41 @@ export function LocationSetupPage() {
 
         <p className="text-sm text-slate-500">
           Você receberá projetos num raio de <strong>{radius} km</strong> a partir de <strong>{city || 'sua cidade'}</strong>.
+          {!lat && !lng && (
+            <span className="text-amber-500 ml-1">Clique no mapa para posicionar ou use o GPS.</span>
+          )}
+        </p>
+
+        {/* Mapa interativo */}
+        <div className="h-80 rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+          <MapContainer
+            center={mapPosition}
+            zoom={10}
+            style={{ height: '100%', width: '100%' }}
+            scrollWheelZoom={false}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <MapClickHandler onMapClick={handleMapClick} />
+            <MapRecenter position={mapPosition} />
+            <MapZoom radius={radius} />
+            <Marker position={mapPosition} />
+            <Circle
+              center={mapPosition}
+              radius={radius * 1000}
+              pathOptions={{
+                fillColor:   '#0284c7',
+                fillOpacity: 0.15,
+                color:       '#0284c7',
+                weight:      2,
+              }}
+            />
+          </MapContainer>
+        </div>
+        <p className="text-xs text-slate-400 text-center">
+          Clique no mapa para mover o ponto central da sua área de atuação
         </p>
       </div>
 
