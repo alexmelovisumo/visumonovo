@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -172,11 +172,24 @@ export function ProjectsListPage() {
   const [deadlineFilter, setDeadlineFilter] = useState('')
   const [urgentOnly, setUrgentOnly]       = useState(false)
   const [onlyInvited, setOnlyInvited]     = useState(false)
+  const [myAreaOnly, setMyAreaOnly]       = useState(true)   // filter by coverage area
   const [displayLimit, setDisplayLimit]   = useState(PAGE_SIZE)
+
+  // cities the professional covers (home city + coverage_cities), lowercase
+  const coveredCities = useMemo(() => {
+    const cities: string[] = []
+    if (profile?.city) cities.push(profile.city.toLowerCase())
+    if (profile?.coverage_cities) {
+      profile.coverage_cities.forEach((c) => cities.push(c.toLowerCase()))
+    }
+    return cities
+  }, [profile?.city, profile?.coverage_cities])
+
+  const hasCoverage = coveredCities.length > 0
 
   useEffect(() => {
     setDisplayLimit(PAGE_SIZE)
-  }, [search, stateFilter, categoryFilter, sortBy, budgetMin, budgetMax, deadlineFilter, urgentOnly, onlyInvited])
+  }, [search, stateFilter, categoryFilter, sortBy, budgetMin, budgetMax, deadlineFilter, urgentOnly, onlyInvited, myAreaOnly])
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -231,6 +244,12 @@ export function ProjectsListPage() {
   })
 
   const filtered = projects
+    .filter((p) => {
+      // Location filter: only show projects in covered cities
+      if (!myAreaOnly || !hasCoverage) return true
+      const projectCity = p.city?.toLowerCase() ?? ''
+      return coveredCities.some((c) => projectCity.includes(c) || c.includes(projectCity))
+    })
     .filter((p) => {
       if (!search) return true
       const q = search.toLowerCase()
@@ -288,12 +307,12 @@ export function ProjectsListPage() {
 
   const hasActiveFilters =
     !!search || !!stateFilter || !!categoryFilter || sortBy !== 'newest' ||
-    !!budgetMin || !!budgetMax || !!deadlineFilter || urgentOnly || onlyInvited
+    !!budgetMin || !!budgetMax || !!deadlineFilter || urgentOnly || onlyInvited || !myAreaOnly
 
   const clearAll = () => {
     setSearch(''); setStateFilter(''); setCategoryFilter(''); setSortBy('newest')
     setBudgetMin(''); setBudgetMax(''); setDeadlineFilter('')
-    setUrgentOnly(false); setOnlyInvited(false)
+    setUrgentOnly(false); setOnlyInvited(false); setMyAreaOnly(true)
   }
 
   return (
@@ -376,7 +395,15 @@ export function ProjectsListPage() {
             <option value="60">Prazo: próx. 60 dias</option>
           </Select>
           {/* Quick toggles */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            {hasCoverage && (
+              <QuickFilter
+                active={myAreaOnly}
+                onClick={() => setMyAreaOnly((v) => !v)}
+                icon={<MapPin size={11} />}
+                label="Minha área"
+              />
+            )}
             <QuickFilter
               active={urgentOnly}
               onClick={() => setUrgentOnly((v) => !v)}
