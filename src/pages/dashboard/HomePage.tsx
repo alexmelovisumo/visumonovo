@@ -1237,10 +1237,9 @@ export function HomePage() {
             Tentar novamente
           </button>
           <button
-            onClick={async () => {
-              const { signOut } = useAuthStore.getState()
-              await signOut()
-              window.location.href = '/login'
+            onClick={() => {
+              useAuthStore.getState().signOut()
+              window.location.replace('/login')
             }}
             className="px-4 py-2 rounded-lg border border-slate-300 text-slate-600 text-sm hover:bg-slate-50 transition-colors"
           >
