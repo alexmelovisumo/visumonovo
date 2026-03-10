@@ -17,7 +17,7 @@ interface AuthState {
   fetchProfile: (userId: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<{ userId: string }>
-  signOut: () => void
+  signOut: () => Promise<void>
   initialize: () => Promise<() => void>
 }
 
@@ -85,9 +85,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return { userId: data.user.id }
   },
 
-  signOut: () => {
-    set({ user: null, profile: null })          // clear immediately (sync)
-    supabase.auth.signOut().catch(() => {})     // invalidate server token async
+  signOut: async () => {
+    await supabase.auth.signOut()   // must await — clears localStorage before navigation
+    set({ user: null, profile: null })
   },
 
   initialize: async () => {
