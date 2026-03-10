@@ -227,27 +227,35 @@ export function ReceivedProposalsPage() {
   const [filter,     setFilter]     = useState('all')
   const [rejectingId, setRejectingId] = useState<string | null>(null)
 
-  // Fetch all proposals received across company projects
+  // Fetch all proposals received across company projects (two-step to avoid nested select RLS issues)
   const { data: proposals = [], isLoading } = useQuery({
     queryKey: ['received-proposals', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Step 1: get all non-cancelled projects owned by this user
+      const { data: projects, error: projErr } = await supabase
         .from('projects')
-        .select('id, title, status, proposals(*, professional:profiles(id, full_name, avatar_url))')
+        .select('id, title, status')
         .eq('client_id', user!.id)
         .neq('status', 'cancelled')
+      if (projErr) throw projErr
+      if (!projects?.length) return []
 
-      if (error) throw error
+      const projectMap = Object.fromEntries(
+        projects.map((p) => [p.id, { id: p.id, title: p.title, status: p.status }])
+      )
 
-      return ((data ?? []) as unknown as {
-        id: string; title: string; status: string
-        proposals: (Omit<ReceivedProposal, 'project'> & { professional: ReceivedProposal['professional'] })[]
-      }[]).flatMap((project) =>
-        project.proposals.map((p) => ({
-          ...p,
-          project: { id: project.id, title: project.title, status: project.status },
-        }))
-      ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) as ReceivedProposal[]
+      // Step 2: get proposals directly (same as ProjectDetailsPage — works with RLS)
+      const { data: props, error: propErr } = await supabase
+        .from('proposals')
+        .select('*, professional:profiles(id, full_name, avatar_url)')
+        .in('project_id', projects.map((p) => p.id))
+        .order('created_at', { ascending: false })
+      if (propErr) throw propErr
+
+      return ((props ?? []) as unknown as ReceivedProposal[]).map((p) => ({
+        ...p,
+        project: projectMap[p.project_id],
+      }))
     },
     enabled: !!user?.id,
   })
