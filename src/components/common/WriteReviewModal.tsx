@@ -111,8 +111,13 @@ export function WriteReviewModal({
       onDone()
     },
     onError: (err: unknown) => {
-      const msg = (err as { message?: string })?.message ?? 'Erro ao enviar avaliação'
-      toast.error(msg)
+      const msg = (err as { message?: string })?.message ?? ''
+      if (msg.includes('unique') || msg.includes('duplicate')) {
+        toast.info('Você já avaliou este profissional neste projeto.')
+        onDone()
+      } else {
+        toast.error(msg || 'Erro ao enviar avaliação')
+      }
     },
   })
 

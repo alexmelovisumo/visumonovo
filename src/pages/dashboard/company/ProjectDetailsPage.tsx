@@ -1103,6 +1103,7 @@ export function ProjectDetailsPage() {
             setShowCompleteModal(false)
             queryClient.invalidateQueries({ queryKey: ['project', id] })
             queryClient.invalidateQueries({ queryKey: ['project-attachments', id] })
+            queryClient.invalidateQueries({ queryKey: ['my-review', id, user?.id] })
           }}
         />
       )}
