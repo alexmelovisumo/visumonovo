@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Edit2, X, CheckCircle2, XCircle } from 'lucide-react'
+import { Edit2, X, XCircle, Globe } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -173,17 +173,22 @@ function EditPlanModal({ plan, onClose }: { plan: SubscriptionPlan; onClose: () 
 
 function PlanCard({ plan, onEdit }: { plan: SubscriptionPlan; onEdit: () => void }) {
   return (
-    <div className={`bg-white rounded-2xl border p-5 space-y-4 ${plan.is_active ? 'border-slate-200' : 'border-slate-100 opacity-60'}`}>
+    <div className={`bg-white rounded-2xl border p-5 space-y-4 ${plan.is_active ? 'border-green-300 ring-1 ring-green-100' : 'border-slate-100 opacity-55'}`}>
       <div className="flex items-start justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-50 text-primary-700">
               {USER_TYPE_LABELS[plan.user_type]}
             </span>
-            {plan.is_active
-              ? <CheckCircle2 size={14} className="text-green-500" />
-              : <XCircle size={14} className="text-slate-400" />
-            }
+            {plan.is_active ? (
+              <span className="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">
+                <Globe size={11} /> Visível online
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-slate-50 text-slate-400 border border-slate-200">
+                <XCircle size={11} /> Inativo
+              </span>
+            )}
           </div>
           <h3 className="font-semibold text-slate-900">{plan.display_name}</h3>
           {plan.description && <p className="text-xs text-slate-500 mt-0.5">{plan.description}</p>}
@@ -243,6 +248,7 @@ function PlanCard({ plan, onEdit }: { plan: SubscriptionPlan; onEdit: () => void
 
 export function PlanManagementPage() {
   const [editing, setEditing] = useState<SubscriptionPlan | null>(null)
+  const [onlyActive, setOnlyActive] = useState(true)
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ['admin-plans'],
@@ -250,18 +256,49 @@ export function PlanManagementPage() {
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
+        .order('is_active', { ascending: false })
         .order('display_order', { ascending: true })
       if (error) throw error
       return data as SubscriptionPlan[]
     },
   })
 
+  const activePlans = plans.filter((p) => p.is_active)
+  const displayed = onlyActive ? activePlans : plans
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900">Planos de assinatura</h1>
-        <p className="text-slate-500 text-sm mt-1">{plans.length} planos configurados</p>
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Planos de assinatura</h1>
+          <p className="text-slate-500 text-sm mt-1">
+            {activePlans.length} visíveis online · {plans.length} no total
+          </p>
+        </div>
+
+        {/* Filtro */}
+        <div className="flex rounded-xl border border-slate-200 overflow-hidden text-sm font-medium shrink-0">
+          <button
+            onClick={() => setOnlyActive(true)}
+            className={`px-4 py-2 transition-colors ${onlyActive ? 'bg-green-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+          >
+            Visíveis online
+          </button>
+          <button
+            onClick={() => setOnlyActive(false)}
+            className={`px-4 py-2 transition-colors ${!onlyActive ? 'bg-primary-600 text-white' : 'bg-white text-slate-500 hover:bg-slate-50'}`}
+          >
+            Todos ({plans.length})
+          </button>
+        </div>
       </div>
+
+      {onlyActive && (
+        <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5">
+          <Globe size={15} className="shrink-0" />
+          Estes são os planos exibidos na página <strong>/escolher-plano</strong>. Edite preços, benefícios e links de pagamento aqui.
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-16">
@@ -269,7 +306,7 @@ export function PlanManagementPage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {plans.map((p) => (
+          {displayed.map((p) => (
             <PlanCard key={p.id} plan={p} onEdit={() => setEditing(p)} />
           ))}
         </div>
