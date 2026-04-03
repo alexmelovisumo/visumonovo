@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   Search, MapPin, Calendar, DollarSign, Filter, FolderOpen,
-  Map, ArrowUpDown, Users, Zap, Mail, Crown,
+  Map, ArrowUpDown, Users, Zap, Mail, Crown, AlertTriangle,
 } from 'lucide-react'
 import { format, differenceInDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -175,12 +175,17 @@ export function ProjectsListPage() {
   const [myAreaOnly, setMyAreaOnly]       = useState(true)   // filter by coverage area
   const [displayLimit, setDisplayLimit]   = useState(PAGE_SIZE)
 
+  // Fix race condition: if profile loaded after component mount, sync stateFilter
+  useEffect(() => {
+    if (profile?.state && !stateFilter) setStateFilter(profile.state)
+  }, [profile?.state]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // cities the professional covers (home city + coverage_cities), lowercase
   const coveredCities = useMemo(() => {
     const cities: string[] = []
-    if (profile?.city) cities.push(profile.city.toLowerCase())
+    if (profile?.city) cities.push(profile.city.toLowerCase().trim())
     if (profile?.coverage_cities) {
-      profile.coverage_cities.forEach((c) => cities.push(c.toLowerCase()))
+      profile.coverage_cities.forEach((c) => cities.push(c.toLowerCase().trim()))
     }
     return cities
   }, [profile?.city, profile?.coverage_cities])
@@ -331,6 +336,21 @@ export function ProjectsListPage() {
           Ver no mapa
         </Link>
       </div>
+
+      {/* Banner: localização não configurada */}
+      {!hasCoverage && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 text-sm">
+          <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <span className="font-semibold text-amber-800">Área de atuação não configurada.</span>
+            {' '}
+            <span className="text-amber-700">Você está vendo todos os projetos. </span>
+            <Link to="/dashboard/localizacao" className="font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900">
+              Configure sua área agora →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3">

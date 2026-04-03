@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle2, ChevronRight, ChevronLeft, Building2, Users, Package, Wrench, Briefcase } from 'lucide-react'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { BR_STATES, SPECIALTIES, USER_TYPE_LABELS } from '@/utils/constants'
@@ -119,6 +120,10 @@ export function OnboardingFlow() {
   }, [])
 
   function goNext() {
+    if (current === 'location') {
+      if (!city.trim()) { toast.error('Informe sua cidade.'); return }
+      if (!state) { toast.error('Selecione seu estado.'); return }
+    }
     if (isLast) { handleSave(); return }
     transition(() => setStep((s) => s + 1))
   }
