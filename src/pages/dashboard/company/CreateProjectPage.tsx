@@ -233,7 +233,7 @@ export function CreateProjectPage() {
     enabled: !!user?.id,
   })
 
-  const { register, handleSubmit, formState: { errors }, setValue, getValues } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, setValue, getValues, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { city: profile?.city ?? '', state: profile?.state ?? '' },
   })
@@ -438,19 +438,25 @@ export function CreateProjectPage() {
           <h2 className="font-semibold text-slate-800">Localização</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label htmlFor="city" required>Cidade</Label>
-              <Input id="city" placeholder="Ex: São Paulo" error={errors.city?.message} {...register('city')} />
-              {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
-            </div>
-            <div className="space-y-1.5">
               <Label htmlFor="state" required>Estado</Label>
               <Select id="state" error={errors.state?.message} {...register('state')}>
-                <option value="">UF</option>
+                <option value="">Selecione o estado</option>
                 {BR_STATES.map((s) => (
                   <option key={s.uf} value={s.uf}>{s.uf} — {s.name}</option>
                 ))}
               </Select>
               {errors.state && <p className="text-xs text-red-500">{errors.state.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="city" required>Cidade</Label>
+              <Input
+                id="city"
+                placeholder={watch('state') ? 'Ex: São Paulo' : 'Selecione o estado primeiro'}
+                disabled={!watch('state')}
+                error={errors.city?.message}
+                {...register('city')}
+              />
+              {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
             </div>
           </div>
         </div>

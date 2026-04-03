@@ -164,7 +164,8 @@ const PAGE_SIZE = 12
 export function ProjectsListPage() {
   const { user, profile } = useAuthStore()
   const [search, setSearch]               = useState('')
-  const [stateFilter, setStateFilter]     = useState(profile?.state ?? '')
+  // stateFilter: '' = all states (manual override only, no auto-init from profile)
+  const [stateFilter, setStateFilter]     = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [sortBy, setSortBy]               = useState<SortOption>('newest')
   const [budgetMin, setBudgetMin]         = useState('')
@@ -172,25 +173,32 @@ export function ProjectsListPage() {
   const [deadlineFilter, setDeadlineFilter] = useState('')
   const [urgentOnly, setUrgentOnly]       = useState(false)
   const [onlyInvited, setOnlyInvited]     = useState(false)
-  const [myAreaOnly, setMyAreaOnly]       = useState(true)   // filter by coverage area
+  const [myAreaOnly, setMyAreaOnly]       = useState(true)
   const [displayLimit, setDisplayLimit]   = useState(PAGE_SIZE)
 
-  // Fix race condition: if profile loaded after component mount, sync stateFilter
-  useEffect(() => {
-    if (profile?.state && !stateFilter) setStateFilter(profile.state)
-  }, [profile?.state]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // cities the professional covers (home city + coverage_cities), lowercase
-  const coveredCities = useMemo(() => {
-    const cities: string[] = []
-    if (profile?.city) cities.push(profile.city.toLowerCase().trim())
-    if (profile?.coverage_cities) {
-      profile.coverage_cities.forEach((c) => cities.push(c.toLowerCase().trim()))
+  // Coverage entries: home city (always has state) + extra cities (may have state as "city|state")
+  // Supports both legacy format ("Blumenau" — city only) and new format ("Blumenau|SC")
+  const coveredEntries = useMemo(() => {
+    const entries: { city: string; state: string | null }[] = []
+    if (profile?.city) {
+      entries.push({
+        city:  profile.city.toLowerCase().trim(),
+        state: profile.state?.toLowerCase().trim() ?? null,
+      })
     }
-    return cities
-  }, [profile?.city, profile?.coverage_cities])
+    if (profile?.coverage_cities) {
+      profile.coverage_cities.forEach((c) => {
+        const parts = c.split('|')
+        entries.push({
+          city:  parts[0].toLowerCase().trim(),
+          state: parts[1]?.toLowerCase().trim() ?? null,
+        })
+      })
+    }
+    return entries
+  }, [profile?.city, profile?.state, profile?.coverage_cities])
 
-  const hasCoverage = coveredCities.length > 0
+  const hasCoverage = coveredEntries.length > 0
 
   useEffect(() => {
     setDisplayLimit(PAGE_SIZE)
@@ -222,8 +230,10 @@ export function ProjectsListPage() {
     enabled: !!user?.id,
   })
 
+  // When myAreaOnly is ON: fetch all states (city+state filter runs client-side)
+  // When myAreaOnly is OFF: respect manual stateFilter dropdown
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ['open-projects', stateFilter, categoryFilter],
+    queryKey: ['open-projects', myAreaOnly ? '' : stateFilter, categoryFilter],
     queryFn: async () => {
       let query = supabase
         .from('projects')
@@ -231,7 +241,7 @@ export function ProjectsListPage() {
         .eq('status', 'open')
         .order('created_at', { ascending: false })
 
-      if (stateFilter) query = query.eq('state', stateFilter)
+      if (!myAreaOnly && stateFilter) query = query.eq('state', stateFilter)
 
       const { data, error } = await query
       if (error) throw error
@@ -250,10 +260,15 @@ export function ProjectsListPage() {
 
   const filtered = projects
     .filter((p) => {
-      // Location filter: only show projects in covered cities (exact match)
+      // Location filter: city + state match
       if (!myAreaOnly || !hasCoverage) return true
-      const projectCity = p.city?.toLowerCase().trim() ?? ''
-      return coveredCities.some((c) => c.trim() === projectCity)
+      const pCity  = p.city?.toLowerCase().trim() ?? ''
+      const pState = p.state?.toLowerCase().trim() ?? ''
+      return coveredEntries.some((e) => {
+        if (e.city !== pCity) return false
+        if (e.state === null) return true   // legacy: city-only entry, match any state
+        return e.state === pState
+      })
     })
     .filter((p) => {
       if (!search) return true

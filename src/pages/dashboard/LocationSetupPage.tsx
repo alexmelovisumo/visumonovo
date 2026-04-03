@@ -56,7 +56,8 @@ export function LocationSetupPage() {
   const [lng,    setLng]    = useState<number | null>(profile?.longitude ?? null)
 
   const [extraCities, setExtraCities] = useState<string[]>(profile?.coverage_cities ?? [])
-  const [newCity, setNewCity] = useState('')
+  const [newCity,      setNewCity]      = useState('')
+  const [newCityState, setNewCityState] = useState('')
 
   const [saving,     setSaving]     = useState(false)
   const [geoLoading, setGeoLoading] = useState(false)
@@ -108,12 +109,15 @@ export function LocationSetupPage() {
 
   const addExtraCity = () => {
     const trimmed = newCity.trim()
-    if (!trimmed) return
-    if (extraCities.map((c) => c.toLowerCase()).includes(trimmed.toLowerCase())) {
+    if (!trimmed) { toast.error('Informe o nome da cidade.'); return }
+    if (!newCityState) { toast.error('Selecione o estado da cidade.'); return }
+    const entry = `${trimmed}|${newCityState}`
+    if (extraCities.map((c) => c.toLowerCase()).includes(entry.toLowerCase())) {
       toast.error('Cidade já adicionada.'); return
     }
-    setExtraCities((prev) => [...prev, trimmed])
+    setExtraCities((prev) => [...prev, entry])
     setNewCity('')
+    setNewCityState('')
   }
 
   const removeExtraCity = (c: string) => setExtraCities((prev) => prev.filter((x) => x !== c))
@@ -270,34 +274,48 @@ export function LocationSetupPage() {
         </div>
 
         <div className="flex gap-2">
+          <select
+            value={newCityState}
+            onChange={(e) => setNewCityState(e.target.value)}
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors shrink-0"
+          >
+            <option value="">Estado</option>
+            {BR_STATES.map((s) => (
+              <option key={s.uf} value={s.uf}>{s.uf}</option>
+            ))}
+          </select>
           <Input
-            placeholder="Ex: Porto Alegre"
+            placeholder="Nome da cidade"
             value={newCity}
             onChange={(e) => setNewCity(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addExtraCity() } }}
           />
-          <Button type="button" variant="outline" onClick={addExtraCity}>
+          <Button type="button" variant="outline" onClick={addExtraCity} className="shrink-0">
             <Plus size={16} /> Adicionar
           </Button>
         </div>
 
         {extraCities.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {extraCities.map((c) => (
-              <span
-                key={c}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm font-medium border border-primary-200"
-              >
-                <MapPin size={12} /> {c}
-                <button
-                  type="button"
-                  onClick={() => removeExtraCity(c)}
-                  className="ml-1 text-primary-400 hover:text-primary-700 transition-colors"
+            {extraCities.map((c) => {
+              const [cityName, uf] = c.split('|')
+              const label = uf ? `${cityName} (${uf})` : cityName
+              return (
+                <span
+                  key={c}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 text-primary-700 text-sm font-medium border border-primary-200"
                 >
-                  <X size={13} />
-                </button>
-              </span>
-            ))}
+                  <MapPin size={12} /> {label}
+                  <button
+                    type="button"
+                    onClick={() => removeExtraCity(c)}
+                    className="ml-1 text-primary-400 hover:text-primary-700 transition-colors"
+                  >
+                    <X size={13} />
+                  </button>
+                </span>
+              )
+            })}
           </div>
         ) : (
           <p className="text-sm text-slate-400 text-center py-4 border border-dashed border-slate-200 rounded-xl">
