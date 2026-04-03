@@ -59,8 +59,9 @@ export function LocationSetupPage() {
   const [newCity,      setNewCity]      = useState('')
   const [newCityState, setNewCityState] = useState('')
 
-  const [saving,     setSaving]     = useState(false)
-  const [geoLoading, setGeoLoading] = useState(false)
+  const [saving,      setSaving]      = useState(false)
+  const [addingCity,  setAddingCity]  = useState(false)
+  const [geoLoading,  setGeoLoading]  = useState(false)
 
   useEffect(() => {
     if (!profile) return
@@ -107,7 +108,7 @@ export function LocationSetupPage() {
     )
   }
 
-  const addExtraCity = () => {
+  const addExtraCity = async () => {
     const trimmed = newCity.trim()
     if (!trimmed) { toast.error('Informe o nome da cidade.'); return }
     if (!newCityState) { toast.error('Selecione o estado da cidade.'); return }
@@ -115,12 +116,32 @@ export function LocationSetupPage() {
     if (extraCities.map((c) => c.toLowerCase()).includes(entry.toLowerCase())) {
       toast.error('Cidade já adicionada.'); return
     }
-    setExtraCities((prev) => [...prev, entry])
+    const updated = [...extraCities, entry]
+    setAddingCity(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ coverage_cities: updated })
+      .eq('id', user!.id)
+    setAddingCity(false)
+    if (error) { toast.error('Erro ao salvar: ' + error.message); return }
+    setExtraCities(updated)
     setNewCity('')
     setNewCityState('')
+    await fetchProfile(user!.id)
+    toast.success(`${trimmed} (${newCityState}) adicionada!`)
   }
 
-  const removeExtraCity = (c: string) => setExtraCities((prev) => prev.filter((x) => x !== c))
+  const removeExtraCity = async (c: string) => {
+    const updated = extraCities.filter((x) => x !== c)
+    setExtraCities(updated)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ coverage_cities: updated.length > 0 ? updated : null })
+      .eq('id', user!.id)
+    if (error) { toast.error('Erro ao remover: ' + error.message); return }
+    await fetchProfile(user!.id)
+    toast.success('Cidade removida.')
+  }
 
   const handleSave = async () => {
     if (!city.trim() || !state.trim()) { toast.error('Informe sua cidade e estado.'); return }
@@ -292,7 +313,7 @@ export function LocationSetupPage() {
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addExtraCity() } }}
             />
           </div>
-          <Button type="button" variant="outline" onClick={addExtraCity} className="w-full">
+          <Button type="button" variant="outline" onClick={addExtraCity} isLoading={addingCity} className="w-full">
             <Plus size={16} /> Adicionar cidade
           </Button>
         </div>
