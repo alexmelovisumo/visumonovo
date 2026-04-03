@@ -157,6 +157,19 @@ function QuickFilter({
   )
 }
 
+// ─── Haversine distance (km) ──────────────────────────────────
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLon = (lon2 - lon1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
 // ─── Page ─────────────────────────────────────────────────────
 
 const PAGE_SIZE = 12
@@ -260,8 +273,17 @@ export function ProjectsListPage() {
 
   const filtered = projects
     .filter((p) => {
-      // Location filter: city + state match
       if (!myAreaOnly || !hasCoverage) return true
+
+      // 1. Radius filter — professional and project both have lat/lng
+      const profLat = profile?.latitude
+      const profLng = profile?.longitude
+      const radius  = profile?.coverage_radius_km
+      if (profLat && profLng && radius && p.latitude && p.longitude) {
+        if (haversineKm(profLat, profLng, p.latitude, p.longitude) <= radius) return true
+      }
+
+      // 2. City+state explicit match (additional cities or fallback)
       const pCity  = p.city?.toLowerCase().trim() ?? ''
       const pState = p.state?.toLowerCase().trim() ?? ''
       return coveredEntries.some((e) => {

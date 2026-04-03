@@ -286,6 +286,21 @@ export function CreateProjectPage() {
     mutationFn: async (data: FormData) => {
       if (!user) throw new Error('Não autenticado')
 
+      // Geocodificar cidade+estado para lat/lng (Nominatim)
+      let latitude: number | null = null
+      let longitude: number | null = null
+      try {
+        const stateObj = BR_STATES.find((s) => s.uf === data.state)
+        const stateName = stateObj?.name ?? data.state
+        const geoUrl = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(data.city)}&state=${encodeURIComponent(stateName)}&country=Brazil&format=json&limit=1`
+        const geoRes = await fetch(geoUrl, { headers: { 'Accept-Language': 'pt-BR' } })
+        const geoData = await geoRes.json()
+        if (geoData[0]) {
+          latitude  = parseFloat(geoData[0].lat)
+          longitude = parseFloat(geoData[0].lon)
+        }
+      } catch { /* geocodificação opcional — continua sem lat/lng */ }
+
       const { data: project, error } = await supabase
         .from('projects')
         .insert({
@@ -297,6 +312,8 @@ export function CreateProjectPage() {
           deadline:    data.deadline || null,
           city:        data.city,
           state:       data.state,
+          latitude,
+          longitude,
           status:      'open',
           is_urgent:   isUrgent,
         })
