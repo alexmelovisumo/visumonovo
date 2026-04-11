@@ -146,6 +146,25 @@ export function LocationSetupPage() {
   const handleSave = async () => {
     if (!city.trim() || !state.trim()) { toast.error('Informe sua cidade e estado.'); return }
     setSaving(true)
+
+    // Auto-geocode the city if lat/lng not set via GPS or map click
+    let saveLat = lat
+    let saveLng = lng
+    if (!saveLat || !saveLng) {
+      try {
+        const stateObj = BR_STATES.find((s) => s.uf === state.trim())
+        const geoUrl = `https://nominatim.openstreetmap.org/search?city=${encodeURIComponent(city.trim())}&state=${encodeURIComponent(stateObj?.name ?? state.trim())}&country=Brazil&format=json&limit=1`
+        const geoRes = await fetch(geoUrl, { headers: { 'Accept-Language': 'pt-BR' } })
+        const geoData = await geoRes.json()
+        if (geoData[0]) {
+          saveLat = parseFloat(geoData[0].lat)
+          saveLng = parseFloat(geoData[0].lon)
+          setLat(saveLat)
+          setLng(saveLng)
+        }
+      } catch { /* optional — save without coords if geocoding fails */ }
+    }
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -153,8 +172,8 @@ export function LocationSetupPage() {
         state:              state.trim(),
         coverage_radius_km: radius,
         coverage_cities:    extraCities.length > 0 ? extraCities : null,
-        latitude:           lat,
-        longitude:          lng,
+        latitude:           saveLat,
+        longitude:          saveLng,
         updated_at:         new Date().toISOString(),
       })
       .eq('id', user!.id)

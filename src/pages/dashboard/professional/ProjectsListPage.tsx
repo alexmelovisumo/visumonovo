@@ -275,15 +275,24 @@ export function ProjectsListPage() {
     .filter((p) => {
       if (!myAreaOnly || !hasCoverage) return true
 
-      // 1. Radius filter — professional and project both have lat/lng
       const profLat = profile?.latitude
       const profLng = profile?.longitude
       const radius  = profile?.coverage_radius_km
+
+      // 1. Radius filter — both professional and project have coordinates
       if (profLat && profLng && radius && p.latitude && p.longitude) {
         if (haversineKm(profLat, profLng, p.latitude, p.longitude) <= radius) return true
       }
 
-      // 2. City+state explicit match (additional cities or fallback)
+      // 2. Radius + project has no coords → include project if professional covers a large area
+      //    (project without coordinates can't be excluded by distance — benefit of the doubt)
+      if (profLat && profLng && radius && !p.latitude && !p.longitude) {
+        // For large radius (>=100km), show projects without coords (cross-state coverage possible)
+        // For small radius, only show if city matches
+        if (radius >= 100) return true
+      }
+
+      // 3. City+state explicit match (additional cities or fallback)
       const pCity  = p.city?.toLowerCase().trim() ?? ''
       const pState = p.state?.toLowerCase().trim() ?? ''
       return coveredEntries.some((e) => {
