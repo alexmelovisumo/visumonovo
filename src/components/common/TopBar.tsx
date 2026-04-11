@@ -295,7 +295,7 @@ export function TopBar({ onMenuClick }: TopBarProps) {
               </Link>
               <div className="my-1 border-t border-slate-100" />
               <button
-                onClick={async () => { await signOut(); window.location.replace('/') }}
+                onClick={async () => { try { await signOut() } catch {} window.location.replace('/') }}
                 className="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
               >
                 <LogOut size={16} /> Sair

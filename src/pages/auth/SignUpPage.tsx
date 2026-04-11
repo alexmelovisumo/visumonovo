@@ -250,15 +250,15 @@ export function SignUpPage() {
       </div>
 
       {/* ── Right: Form ──────────────────────────────────── */}
-      <div className="flex-1 flex items-center justify-center p-6 bg-slate-50">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 bg-slate-50">
         <div className="w-full max-w-md">
           {/* Mobile logo */}
-          <div className="flex lg:hidden items-center justify-center gap-2 mb-6">
+          <div className="flex lg:hidden items-center justify-center gap-2 mb-5">
             <img src="/icons/icon-192x192.png" alt="Visumo" className="w-9 h-9 rounded-lg" />
             <span className="text-primary-700 font-bold text-2xl">Visumo</span>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 sm:p-8">
             <StepIndicator current={step} />
 
             {/* ── Step 1: User Type ─────────────────────── */}

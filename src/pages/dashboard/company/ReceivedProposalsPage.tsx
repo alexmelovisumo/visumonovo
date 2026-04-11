@@ -27,7 +27,7 @@ type ReceivedProposal = {
   estimated_days: number
   created_at: string
   project: { id: string; title: string; status: string }
-  professional: { id: string; full_name: string | null; avatar_url: string | null }
+  professional: { id: string; full_name: string | null; profile_image_url: string | null }
 }
 
 // ─── Proposal Card ─────────────────────────────────────────────
@@ -63,8 +63,8 @@ function ProposalCard({
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {prof.avatar_url ? (
-            <img src={prof.avatar_url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
+          {prof.profile_image_url ? (
+            <img src={prof.profile_image_url} alt="" className="w-10 h-10 rounded-full object-cover shrink-0" />
           ) : (
             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center shrink-0">
               <UserCircle2 size={20} className="text-slate-400" />
@@ -247,7 +247,7 @@ export function ReceivedProposalsPage() {
       // Step 2: get proposals directly (same as ProjectDetailsPage — works with RLS)
       const { data: props, error: propErr } = await supabase
         .from('proposals')
-        .select('*, professional:profiles(id, full_name, avatar_url)')
+        .select('*, professional:profiles(id, full_name, profile_image_url)')
         .in('project_id', projects.map((p) => p.id))
         .order('created_at', { ascending: false })
       if (propErr) throw propErr
