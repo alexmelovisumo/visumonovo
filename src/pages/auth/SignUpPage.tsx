@@ -220,10 +220,17 @@ export function SignUpPage() {
             .maybeSingle()
 
           if (planData) {
-            const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
-            const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly')
-            window.location.href = checkoutUrl
-            return
+            try {
+              const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
+              const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly')
+              window.location.href = checkoutUrl
+              return
+            } catch (checkoutErr: unknown) {
+              const msg = checkoutErr instanceof Error ? checkoutErr.message : 'Erro ao iniciar pagamento'
+              toast.error(`${msg}. Acesse Assinatura para tentar novamente.`)
+              navigate('/dashboard/renovar-assinatura', { replace: true })
+              return
+            }
           }
         }
 
