@@ -13,9 +13,11 @@ interface ProductWithSupplier {
   name: string
   description: string | null
   price: number | null
+  unit: string | null
   category: string | null
   image_url: string | null
   is_active: boolean
+  is_featured: boolean
   created_at: string
   supplier: {
     full_name: string | null
@@ -83,7 +85,12 @@ function ProductCard({
   }
 
   return (
-    <div className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-md transition-all flex flex-col">
+    <div className={`relative bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-all flex flex-col ${product.is_featured ? 'border-amber-300 shadow-amber-100' : 'border-slate-200'}`}>
+      {product.is_featured && (
+        <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-1 flex items-center gap-1">
+          <Star size={10} fill="white" /> DESTAQUE
+        </div>
+      )}
       <div className="absolute top-2 right-2 z-10">
         <FavoriteButton entityType="supplier" entityId={product.supplier_id} />
       </div>
@@ -151,6 +158,7 @@ function ProductCard({
         {product.price != null && (
           <p className="text-base font-black text-primary-600">
             R$ {product.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            {product.unit && <span className="text-xs font-normal text-slate-400 ml-1">/ {product.unit}</span>}
           </p>
         )}
 

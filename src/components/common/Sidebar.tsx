@@ -162,6 +162,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Mapa de Projetos', path: '/dashboard/projetos/mapa', icon: <Map size={18} /> },
     { label: 'Negociações', path: '/dashboard/negociacoes', icon: <Handshake size={18} />, badge: pendingInvitations || undefined },
     { label: 'Meus Projetos', path: '/dashboard/gerenciar-projetos', icon: <ListChecks size={18} /> },
+    { label: 'Fornecedores', path: '/dashboard/fornecedores', icon: <Store size={18} /> },
     { label: 'Estatísticas', path: '/dashboard/estatisticas', icon: <BarChart2 size={18} /> },
     { label: 'Cotações', path: '/dashboard/cotacoes', icon: <ClipboardList size={18} />, badge: quoteBadge },
     { label: 'Ranking', path: '/dashboard/ranking', icon: <Trophy size={18} /> },
