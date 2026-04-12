@@ -5,7 +5,7 @@ import { ChevronLeft, Tag, X, Check, ArrowRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
-import { createFreeSubscription, createPendingSubscription } from '@/hooks/useSubscription'
+import { createFreeSubscription, createPendingSubscription, createCheckout } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import type { SubscriptionPlan } from '@/types'
@@ -294,15 +294,10 @@ export function PlanSelectionPage() {
         toast.success('Plano ativado com cupom!')
         navigate('/dashboard/home', { replace: true })
       } else {
-        const paymentLink = plan.payment_link_yearly
-        if (paymentLink) {
-          await createPendingSubscription(user.id, plan.id, 'yearly', plan.price_yearly ?? 0)
-          await fetchProfile(user.id)
-          window.location.href = paymentLink
-        } else {
-          toast.info('Assinatura criada. Complete o pagamento.')
-          navigate('/dashboard/aguardando-pagamento', { replace: true })
-        }
+        const sub = await createPendingSubscription(user.id, plan.id, 'yearly', plan.price_yearly ?? 0)
+        await fetchProfile(user.id)
+        const checkoutUrl = await createCheckout(sub.id, plan.id, 'yearly')
+        window.location.href = checkoutUrl
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? ''

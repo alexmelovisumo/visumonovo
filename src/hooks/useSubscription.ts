@@ -112,6 +112,34 @@ export async function createPendingSubscription(
   return data as UserSubscription
 }
 
+// ─── Create PagBank hosted checkout via Edge Function ────────
+
+export async function createCheckout(
+  subscriptionId: string,
+  planId: string,
+  billingCycle: 'monthly' | 'yearly'
+): Promise<string> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Sessão expirada')
+
+  const res = await fetch(
+    `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,
+    {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ subscription_id: subscriptionId, plan_id: planId, billing_cycle: billingCycle }),
+    }
+  )
+
+  const json = await res.json()
+  if (!res.ok) throw new Error(json?.error?.description ?? json?.error ?? 'Erro ao criar checkout')
+  if (!json.checkout_url) throw new Error('URL de pagamento não retornada')
+  return json.checkout_url
+}
+
 // ─── Hook ────────────────────────────────────────────────────
 
 export function useSubscription() {

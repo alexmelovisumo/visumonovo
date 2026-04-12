@@ -7,7 +7,7 @@ import { Building2, Wrench, Package, Eye, EyeOff, ChevronLeft, ShoppingBag, Laye
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
-import { createPendingSubscription } from '@/hooks/useSubscription'
+import { createPendingSubscription, createCheckout } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -219,9 +219,10 @@ export function SignUpPage() {
             .eq('is_active', true)
             .maybeSingle()
 
-          if (planData?.payment_link_yearly) {
-            await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
-            window.location.href = planData.payment_link_yearly
+          if (planData) {
+            const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
+            const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly')
+            window.location.href = checkoutUrl
             return
           }
         }
