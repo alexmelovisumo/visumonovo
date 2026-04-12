@@ -7,6 +7,7 @@ import { Building2, Wrench, Package, Eye, EyeOff, ChevronLeft, ShoppingBag, Laye
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
+import { createPendingSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -207,6 +208,24 @@ export function SignUpPage() {
         await new Promise(r => setTimeout(r, 2000))
         await fetchProfile(authData.user.id)
         toast.success('Conta criada com sucesso!')
+
+        // Se veio de uma seleção de plano, cria assinatura pendente e redireciona para pagamento
+        const planoParam = searchParams.get('plano')
+        if (planoParam) {
+          const { data: planData } = await supabase
+            .from('subscription_plans')
+            .select('*')
+            .eq('name', planoParam)
+            .eq('is_active', true)
+            .maybeSingle()
+
+          if (planData?.payment_link_yearly) {
+            await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
+            window.location.href = planData.payment_link_yearly
+            return
+          }
+        }
+
         navigate('/dashboard/home', { replace: true })
       } else {
         // Email de confirmação foi enviado — redireciona para login com aviso
