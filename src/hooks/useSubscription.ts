@@ -117,10 +117,12 @@ export async function createPendingSubscription(
 export async function createCheckout(
   subscriptionId: string,
   planId: string,
-  billingCycle: 'monthly' | 'yearly'
+  billingCycle: 'monthly' | 'yearly',
+  accessToken?: string
 ): Promise<string> {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) throw new Error('Sessão expirada')
+  const token = accessToken ?? (await supabase.auth.getSession()).data.session?.access_token
+  if (!token) throw new Error('Sessão expirada')
+  const session = { access_token: token }
 
   const res = await fetch(
     `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-checkout`,

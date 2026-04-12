@@ -222,7 +222,7 @@ export function SignUpPage() {
           if (planData) {
             try {
               const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
-              const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly')
+              const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly', authData.session.access_token)
               window.location.href = checkoutUrl
               return
             } catch (checkoutErr: unknown) {
