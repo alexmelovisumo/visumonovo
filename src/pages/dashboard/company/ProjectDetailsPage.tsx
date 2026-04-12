@@ -803,84 +803,80 @@ export function ProjectDetailsPage() {
 
       {/* Header */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6">
-        <div className="flex items-start justify-between gap-4 mb-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2 flex-wrap">
-              <span className={cn(
-                'text-xs font-medium px-2.5 py-1 rounded-full',
-                project.status === 'open'      ? 'bg-green-100 text-green-700'   :
-                project.status === 'completed' ? 'bg-blue-100 text-blue-700'     :
-                'bg-slate-100 text-slate-600'
-              )}>
-                {statusLabel}
+        <div className="mb-4">
+          {/* Badges + título */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className={cn(
+              'text-xs font-medium px-2.5 py-1 rounded-full',
+              project.status === 'open'      ? 'bg-green-100 text-green-700'   :
+              project.status === 'completed' ? 'bg-blue-100 text-blue-700'     :
+              'bg-slate-100 text-slate-600'
+            )}>
+              {statusLabel}
+            </span>
+            {project.is_urgent && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
+                <Zap size={9} /> URGENTE
               </span>
-              {project.is_urgent && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
-                  <Zap size={9} /> URGENTE
-                </span>
-              )}
-              {project.is_featured && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">
-                  <Crown size={9} /> DESTAQUE
-                </span>
-              )}
-              {categories.map((c) => (
-                <span key={c} className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{c}</span>
-              ))}
-            </div>
-            <h1 className="text-xl font-bold text-slate-900">{project.title}</h1>
+            )}
+            {project.is_featured && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">
+                <Crown size={9} /> DESTAQUE
+              </span>
+            )}
+            {categories.map((c) => (
+              <span key={c} className="text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">{c}</span>
+            ))}
           </div>
-          {isAdmin && (
-            <Button
-              size="sm"
-              variant="outline"
-              className={cn(
-                project.is_featured
-                  ? 'border-amber-300 text-amber-600 hover:bg-amber-50'
-                  : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+          <h1 className="text-xl font-bold text-slate-900 mb-3">{project.title}</h1>
+
+          {/* Action buttons — full row on mobile */}
+          {(isAdmin || isOwner) && (
+            <div className="flex gap-2 flex-wrap">
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={cn(
+                    project.is_featured
+                      ? 'border-amber-300 text-amber-600 hover:bg-amber-50'
+                      : 'border-slate-300 text-slate-600 hover:bg-slate-50'
+                  )}
+                  onClick={() => toggleFeatured.mutate()}
+                  isLoading={toggleFeatured.isPending}
+                >
+                  <Crown size={14} />
+                  {project.is_featured ? 'Remover destaque' : 'Destacar'}
+                </Button>
               )}
-              onClick={() => toggleFeatured.mutate()}
-              isLoading={toggleFeatured.isPending}
-              title={project.is_featured ? 'Remover destaque' : 'Destacar projeto'}
-            >
-              <Crown size={14} />
-              {project.is_featured ? 'Remover destaque' : 'Destacar'}
-            </Button>
-          )}
-          {isOwner && (
-            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleShare}
-                title="Compartilhar projeto"
-              >
-                <Share2 size={14} />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-primary-300 text-primary-600 hover:bg-primary-50"
-                onClick={() => duplicateProject.mutate()}
-                isLoading={duplicateProject.isPending}
-                title="Duplicar projeto"
-              >
-                <CopyPlus size={14} /> Duplicar
-              </Button>
-              <Link to={`/dashboard/editar-projeto/${project.id}`}>
-                <Button size="sm" variant="outline"><Edit2 size={14} /> Editar</Button>
-              </Link>
-              <Button
-                size="sm"
-                variant="outline"
-                className="border-red-300 text-red-600 hover:bg-red-50"
-                onClick={() => {
-                  if (confirm('Excluir este projeto?')) deleteProject.mutate()
-                }}
-                isLoading={deleteProject.isPending}
-              >
-                <Trash2 size={14} />
-              </Button>
+              {isOwner && (
+                <>
+                  <Button size="sm" variant="outline" onClick={handleShare} title="Compartilhar">
+                    <Share2 size={14} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary-300 text-primary-600 hover:bg-primary-50"
+                    onClick={() => duplicateProject.mutate()}
+                    isLoading={duplicateProject.isPending}
+                  >
+                    <CopyPlus size={14} /> Duplicar
+                  </Button>
+                  <Link to={`/dashboard/editar-projeto/${project.id}`}>
+                    <Button size="sm" variant="outline"><Edit2 size={14} /> Editar</Button>
+                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                    onClick={() => { if (confirm('Excluir este projeto?')) deleteProject.mutate() }}
+                    isLoading={deleteProject.isPending}
+                  >
+                    <Trash2 size={14} />
+                  </Button>
+                </>
+              )}
             </div>
           )}
         </div>
