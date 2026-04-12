@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Search, Package, Tag, Store, ChevronLeft, MessageCircle, BadgeCheck, Crown, Star } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { FavoriteButton } from '@/components/common/FavoriteButton'
+import { BR_STATES } from '@/utils/constants'
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -95,7 +96,7 @@ function ProductCard({
         <FavoriteButton entityType="supplier" entityId={product.supplier_id} />
       </div>
       {/* Image */}
-      <div className="w-full h-44 bg-slate-100 shrink-0 overflow-hidden">
+      <div className="w-full h-32 bg-slate-100 shrink-0 overflow-hidden">
         {product.image_url ? (
           <img
             src={product.image_url}
@@ -183,10 +184,11 @@ const PAGE_SIZE = 12
 export function SuppliersListPage() {
   const [search, setSearch]     = useState('')
   const [category, setCategory] = useState('Todos')
+  const [stateFilter, setStateFilter] = useState('')
   const [sort, setSort]         = useState<SortOption>('newest')
   const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE)
 
-  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, category, sort])
+  useEffect(() => { setDisplayLimit(PAGE_SIZE) }, [search, category, stateFilter, sort])
 
   const { data: products = [], isLoading } = useQuery({
     queryKey: ['suppliers-catalog'],
@@ -219,8 +221,9 @@ export function SuppliersListPage() {
         (p.supplier?.full_name ?? '').toLowerCase().includes(term)
 
       const matchesCategory = category === 'Todos' || p.category === category
+      const matchesState = !stateFilter || p.supplier?.state === stateFilter
 
-      return matchesSearch && matchesCategory
+      return matchesSearch && matchesCategory && matchesState
     })
     .sort((a, b) => {
       // Featured suppliers first
@@ -274,6 +277,16 @@ export function SuppliersListPage() {
         >
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+        <select
+          value={stateFilter}
+          onChange={(e) => setStateFilter(e.target.value)}
+          className="px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary-300 bg-white"
+        >
+          <option value="">Todos os estados</option>
+          {BR_STATES.map((s) => (
+            <option key={s.uf} value={s.uf}>{s.name}</option>
           ))}
         </select>
         <select
