@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { PlusCircle, Edit2, Trash2, Package, X, ImageIcon, ExternalLink, Copy } from 'lucide-react'
+import { PlusCircle, Edit2, Trash2, Package, X, ImageIcon, ExternalLink, Copy, Star } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
@@ -15,11 +15,15 @@ import type { Product } from '@/types'
 
 // ─── Schema ──────────────────────────────────────────────────
 
+const UNITS = ['m²', 'm linear', 'un', 'kg', 'rolo', 'folha', 'caixa', 'litro', 'par']
+
 const schema = z.object({
   title:       z.string().min(3, 'Nome muito curto'),
   description: z.string().optional(),
   price:       z.string().optional(),
+  unit:        z.string().optional(),
   category:    z.string().optional(),
+  is_featured: z.boolean().optional(),
 })
 
 type FormData = z.infer<typeof schema>
@@ -39,13 +43,15 @@ function ProductForm({
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(product?.image_url ?? null)
 
-  const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       title:       product?.title ?? '',
       description: product?.description ?? '',
       price:       product?.price?.toString() ?? '',
+      unit:        product?.unit ?? '',
       category:    product?.category ?? '',
+      is_featured: product?.is_featured ?? false,
     },
   })
 
@@ -76,9 +82,11 @@ function ProductForm({
         title:        data.title,
         description:  data.description || null,
         price:        data.price ? parseFloat(data.price) : null,
+        unit:         data.unit || null,
         category:     data.category || null,
         image_url:    imageUrl,
         is_active:    true,
+        is_featured:  data.is_featured ?? false,
       }
 
       if (product) {
@@ -154,16 +162,46 @@ function ProductForm({
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="price">Preço (R$)</Label>
               <Input id="price" type="number" min="0" step="0.01" placeholder="0,00" {...register('price')} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="category">Categoria</Label>
-              <Input id="category" placeholder="Ex: Adesivos" {...register('category')} />
+              <Label htmlFor="unit">Unidade</Label>
+              <select
+                id="unit"
+                className="flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+                {...register('unit')}
+              >
+                <option value="">Selecione</option>
+                {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+              </select>
             </div>
           </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="category">Categoria</Label>
+            <Input id="category" placeholder="Ex: Adesivos, Impressão, Sinalização" {...register('category')} />
+          </div>
+
+          {/* Destaque */}
+          <label className="flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition-colors">
+            <div className="flex items-center gap-2">
+              <Star size={16} className={watch('is_featured') ? 'text-amber-500' : 'text-slate-400'} />
+              <div>
+                <p className="text-sm font-medium text-slate-800">Produto em destaque</p>
+                <p className="text-xs text-slate-400">Aparece com badge dourado na listagem</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setValue('is_featured', !watch('is_featured'))}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none ${watch('is_featured') ? 'bg-amber-500' : 'bg-slate-300'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${watch('is_featured') ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </label>
 
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancelar</Button>
@@ -191,7 +229,13 @@ function ProductCard({
   deleting: boolean
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:border-primary-300 hover:shadow-md transition-all group">
+    <div className={`bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-all group ${product.is_featured ? 'border-amber-300' : 'border-slate-200 hover:border-primary-300'}`}>
+      {/* Featured badge */}
+      {product.is_featured && (
+        <div className="bg-amber-400 text-white text-[10px] font-bold px-3 py-1 flex items-center gap-1">
+          <Star size={10} fill="white" /> DESTAQUE
+        </div>
+      )}
       {/* Image */}
       <div className="w-full h-40 bg-slate-100 flex items-center justify-center overflow-hidden">
         {product.image_url
@@ -217,6 +261,7 @@ function ProductCard({
         {product.price && (
           <p className="text-sm font-semibold text-slate-800">
             {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            {product.unit && <span className="text-xs font-normal text-slate-400 ml-1">/ {product.unit}</span>}
           </p>
         )}
 
