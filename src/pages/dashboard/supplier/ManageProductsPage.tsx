@@ -313,15 +313,15 @@ export function ManageProductsPage() {
 
       {/* Public profile banner */}
       {user && (
-        <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="min-w-0">
+        <div className="bg-primary-50 border border-primary-100 rounded-2xl p-4 space-y-3">
+          <div className="overflow-hidden">
             <p className="text-sm font-semibold text-primary-800">Seu perfil público</p>
             <p className="text-xs text-primary-600 truncate mt-0.5">{publicUrl}</p>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2">
             <button
               onClick={copyLink}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-200 px-3 py-1.5 rounded-lg hover:bg-primary-50 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium text-primary-700 bg-white border border-primary-200 px-3 py-2 rounded-lg hover:bg-primary-50 transition-colors"
             >
               <Copy size={13} /> Copiar link
             </button>
@@ -329,7 +329,7 @@ export function ManageProductsPage() {
               to={`/fornecedor/${user.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white bg-primary-600 px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 text-xs font-medium text-white bg-primary-600 px-3 py-2 rounded-lg hover:bg-primary-700 transition-colors"
             >
               <ExternalLink size={13} /> Visualizar
             </Link>
