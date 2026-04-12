@@ -176,6 +176,25 @@ export interface Message {
   sender?: Profile
 }
 
+// ─── Certifications & Equipment ──────────────────────────────
+
+export interface ProfileCertification {
+  id: string
+  profile_id: string
+  name: string
+  issuer: string | null
+  issued_at: string | null
+  created_at: string
+}
+
+export interface ProfileEquipment {
+  id: string
+  profile_id: string
+  name: string
+  description: string | null
+  created_at: string
+}
+
 // ─── Portfolio ────────────────────────────────────────────────
 
 export interface PortfolioImage {

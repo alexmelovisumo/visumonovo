@@ -7,6 +7,7 @@ import { z } from 'zod'
 import {
   User, Camera, Save, Plus, Trash2, Globe, Linkedin,
   MapPin, Phone, FileText, Image as ImageIcon, Upload, Navigation, ExternalLink, CheckCircle2, XCircle,
+  Award, Wrench, Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { USER_TYPE_LABELS, SPECIALTIES } from '@/utils/constants'
-import type { PortfolioImage } from '@/types'
+import type { PortfolioImage, ProfileCertification, ProfileEquipment } from '@/types'
 
 // ─── Schema ──────────────────────────────────────────────────
 
@@ -36,6 +37,232 @@ const profileSchema = z.object({
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
+
+// ─── Certifications Section ───────────────────────────────────
+
+function CertificationsSection({ userId }: { userId: string }) {
+  const queryClient = useQueryClient()
+  const [name, setName]     = useState('')
+  const [issuer, setIssuer] = useState('')
+  const [date, setDate]     = useState('')
+  const [adding, setAdding] = useState(false)
+
+  const { data: certs = [], isLoading } = useQuery({
+    queryKey: ['certifications', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profile_certifications')
+        .select('*')
+        .eq('profile_id', userId)
+        .order('issued_at', { ascending: false })
+      if (error) throw error
+      return data as ProfileCertification[]
+    },
+  })
+
+  const handleAdd = async () => {
+    if (!name.trim()) { toast.error('Informe o nome da certificação.'); return }
+    setAdding(true)
+    const { error } = await supabase.from('profile_certifications').insert({
+      profile_id: userId,
+      name:       name.trim(),
+      issuer:     issuer.trim() || null,
+      issued_at:  date || null,
+    })
+    setAdding(false)
+    if (error) { toast.error('Erro ao adicionar: ' + error.message); return }
+    setName(''); setIssuer(''); setDate('')
+    queryClient.invalidateQueries({ queryKey: ['certifications', userId] })
+    toast.success('Certificação adicionada!')
+  }
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('profile_certifications').delete().eq('id', id)
+    if (error) { toast.error('Erro ao remover.'); return }
+    queryClient.invalidateQueries({ queryKey: ['certifications', userId] })
+    toast.success('Certificação removida.')
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+      <div className="flex items-center gap-2 text-slate-800 font-semibold">
+        <Award size={18} className="text-primary-600" /> Certificações e Cursos
+      </div>
+      <p className="text-xs text-slate-500 -mt-3">NRs, cursos, especializações e demais certificados que comprovam sua qualificação.</p>
+
+      <div className="space-y-3 border border-slate-100 rounded-xl p-4 bg-slate-50">
+        <h3 className="text-sm font-medium text-slate-700">Adicionar Certificação</h3>
+        <Input
+          placeholder="Nome da certificação (ex: NR35 — Trabalho em Altura)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <Input
+            placeholder="Emissor (ex: SENAI, CREA)"
+            value={issuer}
+            onChange={(e) => setIssuer(e.target.value)}
+          />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 h-10 rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-500">
+              <Calendar size={14} className="shrink-0 text-slate-400" />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-slate-900 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+        <Button type="button" onClick={handleAdd} isLoading={adding} className="w-full">
+          <Plus size={15} /> Adicionar Certificação
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <div className="w-5 h-5 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : certs.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-4 border border-dashed border-slate-200 rounded-xl">
+          Nenhuma certificação cadastrada ainda.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {certs.map((c) => (
+            <div key={c.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-white">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-primary-50 flex items-center justify-center shrink-0">
+                  <Award size={15} className="text-primary-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800 leading-snug">{c.name}</p>
+                  <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                    {c.issuer && <span className="text-xs text-slate-500">{c.issuer}</span>}
+                    {c.issued_at && (
+                      <span className="text-xs text-slate-400">
+                        {new Date(c.issued_at).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(c.id)}
+                className="text-slate-300 hover:text-red-500 transition-colors shrink-0 mt-0.5"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Equipment Section ────────────────────────────────────────
+
+function EquipmentSection({ userId }: { userId: string }) {
+  const queryClient = useQueryClient()
+  const [name, setName]           = useState('')
+  const [description, setDesc]    = useState('')
+  const [adding, setAdding]       = useState(false)
+
+  const { data: items = [], isLoading } = useQuery({
+    queryKey: ['equipment', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profile_equipment')
+        .select('*')
+        .eq('profile_id', userId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      return data as ProfileEquipment[]
+    },
+  })
+
+  const handleAdd = async () => {
+    if (!name.trim()) { toast.error('Informe o nome do equipamento.'); return }
+    setAdding(true)
+    const { error } = await supabase.from('profile_equipment').insert({
+      profile_id:  userId,
+      name:        name.trim(),
+      description: description.trim() || null,
+    })
+    setAdding(false)
+    if (error) { toast.error('Erro ao adicionar: ' + error.message); return }
+    setName(''); setDesc('')
+    queryClient.invalidateQueries({ queryKey: ['equipment', userId] })
+    toast.success('Equipamento adicionado!')
+  }
+
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('profile_equipment').delete().eq('id', id)
+    if (error) { toast.error('Erro ao remover.'); return }
+    queryClient.invalidateQueries({ queryKey: ['equipment', userId] })
+    toast.success('Equipamento removido.')
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
+      <div className="flex items-center gap-2 text-slate-800 font-semibold">
+        <Wrench size={18} className="text-primary-600" /> Equipamentos e Ferramentas
+      </div>
+      <p className="text-xs text-slate-500 -mt-3">Veículos, andaimes, ferramentas e qualquer equipamento próprio que você possui.</p>
+
+      <div className="space-y-3 border border-slate-100 rounded-xl p-4 bg-slate-50">
+        <h3 className="text-sm font-medium text-slate-700">Adicionar Equipamento</h3>
+        <Input
+          placeholder="Nome do equipamento (ex: Caminhão baú, Andaime tubular)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Input
+          placeholder="Descrição opcional (ex: capacidade, marca, modelo)"
+          value={description}
+          onChange={(e) => setDesc(e.target.value)}
+        />
+        <Button type="button" onClick={handleAdd} isLoading={adding} className="w-full">
+          <Plus size={15} /> Adicionar Equipamento
+        </Button>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-4">
+          <div className="w-5 h-5 border-4 border-primary-600 border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : items.length === 0 ? (
+        <p className="text-sm text-slate-400 text-center py-4 border border-dashed border-slate-200 rounded-xl">
+          Nenhum equipamento cadastrado ainda.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-start justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-white">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                  <Wrench size={15} className="text-amber-600" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-slate-800">{item.name}</p>
+                  {item.description && <p className="text-xs text-slate-500 mt-0.5">{item.description}</p>}
+                </div>
+              </div>
+              <button
+                onClick={() => handleDelete(item.id)}
+                className="text-slate-300 hover:text-red-500 transition-colors shrink-0 mt-0.5"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ─── Portfolio Section ────────────────────────────────────────
 
@@ -602,6 +829,10 @@ export function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Certificações e Equipamentos (profissional / empresa_prestadora) */}
+      {isProfissional && <CertificationsSection userId={user.id} />}
+      {isProfissional && <EquipmentSection userId={user.id} />}
 
       {/* Portfolio (profissional / empresa_prestadora) */}
       {isProfissional && <PortfolioSection userId={user.id} />}
