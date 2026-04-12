@@ -123,8 +123,13 @@ Deno.serve(async (req: Request) => {
   console.log('[create-checkout] PagBank response:', JSON.stringify(pgData))
 
   if (!pgRes.ok) {
+    const errorMsg = pgData?.error_messages?.[0]?.description
+      ?? pgData?.message
+      ?? pgData?.error
+      ?? JSON.stringify(pgData)
+    console.error('[create-checkout] PagBank error:', errorMsg)
     return new Response(
-      JSON.stringify({ error: pgData }),
+      JSON.stringify({ error: errorMsg }),
       { status: pgRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
