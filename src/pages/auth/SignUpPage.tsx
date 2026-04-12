@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { CitySelect } from '@/components/ui/city-select'
 import { cn } from '@/lib/utils'
 import { BR_STATES } from '@/utils/constants'
 import type { UserType } from '@/types'
@@ -457,34 +458,34 @@ export function SignUpPage() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="city" required>Cidade</Label>
-                      <Input
-                        id="city"
-                        placeholder="Ex: São Paulo"
-                        error={profileForm.formState.errors.city?.message}
-                        {...profileForm.register('city')}
-                      />
-                      {profileForm.formState.errors.city && (
-                        <p className="text-xs text-red-500">{profileForm.formState.errors.city.message}</p>
-                      )}
-                    </div>
-
+                  <div className="space-y-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="state" required>Estado</Label>
                       <Select
                         id="state"
                         error={profileForm.formState.errors.state?.message}
-                        {...profileForm.register('state')}
+                        {...profileForm.register('state', { onChange: () => profileForm.setValue('city', '') })}
                       >
-                        <option value="">UF</option>
+                        <option value="">Selecione o estado</option>
                         {BR_STATES.map((s) => (
                           <option key={s.uf} value={s.uf}>{s.uf} — {s.name}</option>
                         ))}
                       </Select>
                       {profileForm.formState.errors.state && (
                         <p className="text-xs text-red-500">{profileForm.formState.errors.state.message}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="city" required>Cidade</Label>
+                      <CitySelect
+                        id="city"
+                        uf={profileForm.watch('state')}
+                        error={profileForm.formState.errors.city?.message}
+                        {...profileForm.register('city')}
+                      />
+                      {profileForm.formState.errors.city && (
+                        <p className="text-xs text-red-500">{profileForm.formState.errors.city.message}</p>
                       )}
                     </div>
                   </div>

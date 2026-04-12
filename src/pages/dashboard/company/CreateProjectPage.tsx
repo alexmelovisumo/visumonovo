@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
+import { CitySelect } from '@/components/ui/city-select'
 import { cn } from '@/lib/utils'
 import { BR_STATES } from '@/utils/constants'
 import type { ProjectCategory } from '@/types'
@@ -456,7 +457,7 @@ export function CreateProjectPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="state" required>Estado</Label>
-              <Select id="state" error={errors.state?.message} {...register('state')}>
+              <Select id="state" error={errors.state?.message} {...register('state', { onChange: () => setValue('city', '') })}>
                 <option value="">Selecione o estado</option>
                 {BR_STATES.map((s) => (
                   <option key={s.uf} value={s.uf}>{s.uf} — {s.name}</option>
@@ -466,10 +467,9 @@ export function CreateProjectPage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="city" required>Cidade</Label>
-              <Input
+              <CitySelect
                 id="city"
-                placeholder={watch('state') ? 'Ex: São Paulo' : 'Selecione o estado primeiro'}
-                disabled={!watch('state')}
+                uf={watch('state')}
                 error={errors.city?.message}
                 {...register('city')}
               />

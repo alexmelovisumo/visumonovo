@@ -7,8 +7,9 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/authStore'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CitySelect } from '@/components/ui/city-select'
+import { Select } from '@/components/ui/select'
 import { BR_STATES } from '@/utils/constants'
 
 // Fix leaflet default marker icons
@@ -201,27 +202,26 @@ export function LocationSetupPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label htmlFor="city" required>Cidade</Label>
-            <Input
-              id="city"
-              placeholder="Ex: Caxias do Sul"
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1.5">
             <Label htmlFor="state" required>Estado</Label>
-            <select
+            <Select
               id="state"
               value={state}
-              onChange={(e) => setState(e.target.value)}
-              className="flex w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+              onChange={(e) => { setState(e.target.value); setCity('') }}
             >
-              <option value="">Selecione</option>
+              <option value="">Selecione o estado</option>
               {BR_STATES.map((s) => (
                 <option key={s.uf} value={s.uf}>{s.uf} — {s.name}</option>
               ))}
-            </select>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="city" required>Cidade</Label>
+            <CitySelect
+              id="city"
+              uf={state}
+              value={city}
+              onChange={(e) => setCity((e.target as HTMLSelectElement).value)}
+            />
           </div>
         </div>
 
@@ -315,21 +315,19 @@ export function LocationSetupPage() {
 
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <select
+            <Select
               value={newCityState}
-              onChange={(e) => setNewCityState(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 transition-colors"
+              onChange={(e) => { setNewCityState(e.target.value); setNewCity('') }}
             >
               <option value="">Selecione o estado</option>
               {BR_STATES.map((s) => (
                 <option key={s.uf} value={s.uf}>{s.uf} — {s.name}</option>
               ))}
-            </select>
-            <Input
-              placeholder="Nome da cidade"
+            </Select>
+            <CitySelect
+              uf={newCityState}
               value={newCity}
-              onChange={(e) => setNewCity(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addExtraCity() } }}
+              onChange={(e) => setNewCity((e.target as HTMLSelectElement).value)}
             />
           </div>
           <Button type="button" variant="outline" onClick={addExtraCity} isLoading={addingCity} className="w-full">
