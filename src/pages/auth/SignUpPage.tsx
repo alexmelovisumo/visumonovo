@@ -203,6 +203,10 @@ export function SignUpPage() {
 
       // 2. Se a sessão existir (confirmação de email desativada), carrega perfil
       if (authData.session) {
+        // Captura params ANTES do setUser (que pode causar redirect e perder a URL)
+        const planoParam = searchParams.get('plano')
+        const cupomParam = searchParams.get('cupom')
+
         setUser(authData.user)
         // Aguarda o trigger handle_new_user criar o perfil no banco
         await new Promise(r => setTimeout(r, 2000))
@@ -210,7 +214,7 @@ export function SignUpPage() {
         toast.success('Conta criada com sucesso!')
 
         // Se veio de uma seleção de plano, cria assinatura pendente e redireciona para pagamento
-        const planoParam = searchParams.get('plano')
+        if (planoParam)
         if (planoParam) {
           const { data: planData } = await supabase
             .from('subscription_plans')
@@ -222,7 +226,6 @@ export function SignUpPage() {
           if (planData) {
             try {
               // Verifica se tem cupom de 100% de desconto
-              const cupomParam = searchParams.get('cupom')
               if (cupomParam) {
                 const { data: couponData } = await supabase
                   .from('coupons')
