@@ -279,7 +279,8 @@ export function PlanSelectionPage() {
   const handleSelectPlan = async (plan: SubscriptionPlan) => {
     // Não está logado → vai para o cadastro com plano pre-selecionado
     if (!user) {
-      navigate(`/cadastro?plano=${plan.name}`)
+      const couponParam = coupon?.valid ? `&cupom=${coupon.code}` : ''
+      navigate(`/cadastro?plano=${plan.name}${couponParam}`)
       return
     }
 

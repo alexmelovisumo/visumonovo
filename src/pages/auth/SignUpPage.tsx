@@ -7,7 +7,7 @@ import { Building2, Wrench, Package, Eye, EyeOff, ChevronLeft, ShoppingBag, Laye
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/authStore'
 import { supabase } from '@/lib/supabase'
-import { createPendingSubscription, createCheckout } from '@/hooks/useSubscription'
+import { createPendingSubscription, createCheckout, createFreeSubscription } from '@/hooks/useSubscription'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -221,6 +221,21 @@ export function SignUpPage() {
 
           if (planData) {
             try {
+              // Verifica se tem cupom de 100% de desconto
+              const cupomParam = searchParams.get('cupom')
+              if (cupomParam) {
+                const { data: couponData } = await supabase
+                  .from('coupons')
+                  .select('*')
+                  .eq('code', cupomParam.toUpperCase())
+                  .eq('is_active', true)
+                  .maybeSingle()
+                if (couponData?.type === 'lifetime_free') {
+                  await createFreeSubscription(authData.user.id, planData.id)
+                  navigate('/dashboard/home', { replace: true })
+                  return
+                }
+              }
               const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
               const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly', authData.session.access_token)
               window.location.href = checkoutUrl
