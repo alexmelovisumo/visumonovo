@@ -412,19 +412,52 @@ function PortfolioSection({ userId }: { userId: string }) {
 
 // ─── Avatar Upload ────────────────────────────────────────────
 
+async function convertToJpeg(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.width
+      canvas.height = img.height
+      canvas.getContext('2d')!.drawImage(img, 0, 0)
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(url)
+        if (!blob) { reject(new Error('falha')); return }
+        resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }))
+      }, 'image/jpeg', 0.9)
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('falha')) }
+    img.src = url
+  })
+}
+
 function AvatarUpload({ currentUrl, userId, onUploaded }: { currentUrl: string | null; userId: string; onUploaded: (url: string) => void }) {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   const handleChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    let file = e.target.files?.[0]
     if (!file) return
+
+    const isHeic = file.type === 'image/heic' || file.type === 'image/heif'
+      || file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')
+
+    if (isHeic) {
+      try {
+        file = await convertToJpeg(file)
+      } catch {
+        toast.error('Não foi possível converter a foto. No iPhone, vá em Ajustes → Câmera → Formato → "Mais Compatível".')
+        return
+      }
+    }
+
     if (!file.type.startsWith('image/')) { toast.error('Selecione uma imagem'); return }
     if (file.size > 2 * 1024 * 1024) { toast.error('Imagem muito grande (máx. 2 MB)'); return }
 
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop() ?? 'jpg'
+      const ext = isHeic ? 'jpg' : (file.name.split('.').pop() ?? 'jpg')
       const filePath = `${userId}/avatar.${ext}`
 
       const { error } = await supabase.storage
