@@ -75,6 +75,7 @@ import { CategoryManagementPage } from '@/pages/dashboard/admin/CategoryManageme
 import { PaymentLogsPage } from '@/pages/dashboard/admin/PaymentLogsPage'
 import { AdminReportsPage } from '@/pages/dashboard/admin/AdminReportsPage'
 import { AdminActivityPage } from '@/pages/dashboard/admin/AdminActivityPage'
+import { AdminLandingPage } from '@/pages/dashboard/admin/AdminLandingPage'
 
 // ─── Router ───────────────────────────────────────────────────
 
@@ -164,6 +165,7 @@ export const router = createBrowserRouter([
           { path: 'admin/pagamentos', element: <PaymentLogsPage /> },
           { path: 'admin/relatorios', element: <AdminReportsPage /> },
           { path: 'admin/atividade', element: <AdminActivityPage /> },
+          { path: 'admin/landing', element: <AdminLandingPage /> },
         ],
       },
     ],

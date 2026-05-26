@@ -185,6 +185,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     { label: 'Pagamentos', path: '/dashboard/admin/pagamentos', icon: <BarChart3 size={18} /> },
     { label: 'Relatórios', path: '/dashboard/admin/relatorios', icon: <ClipboardList size={18} /> },
     { label: 'Atividade', path: '/dashboard/admin/atividade', icon: <Activity size={18} /> },
+    { label: 'Página Inicial', path: '/dashboard/admin/landing', icon: <Star size={18} /> },
   ]
 
   const getTypeItems = (): NavItem[] => {

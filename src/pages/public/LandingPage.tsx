@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '@/lib/supabase'
 import {
   ArrowRight, CheckCircle2, Building2, Wrench, Package,
   Search, Handshake, Star, ChevronRight,
@@ -42,7 +44,7 @@ function Hero() {
   return (
     <section className="pt-28 pb-16 px-4 sm:px-6 text-center bg-gradient-to-b from-primary-50 via-white to-white">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-slate-900 leading-tight mb-6">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-slate-900 leading-tight mb-6">
           <span className="gradient-text block">Comunicação Visual</span>
           Conectamos quem precisa com quem faz acontecer
         </h1>
@@ -322,7 +324,7 @@ function Features() {
 
 // ─── FAQ ─────────────────────────────────────────────────────
 
-const FAQ_ITEMS = [
+const FAQ_ITEMS_DEFAULT = [
   {
     q: 'O Visumo é gratuito?',
     a: 'O Visumo funciona por assinatura anual. Você escolhe o plano ideal para o seu perfil (profissional, empresa ou fornecedor) e durante o ano todo pode fazer quantas negociações quiser sem custo adicional.',
@@ -371,6 +373,21 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 function FAQ() {
+  const { data: items = FAQ_ITEMS_DEFAULT } = useQuery({
+    queryKey: ['landing-faq'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('landing_faq')
+        .select('question, answer')
+        .eq('is_active', true)
+        .order('position')
+      return data?.length
+        ? data.map(d => ({ q: d.question, a: d.answer }))
+        : FAQ_ITEMS_DEFAULT
+    },
+    staleTime: 1000 * 60 * 5,
+  })
+
   return (
     <section className="py-20 px-4 sm:px-6 bg-slate-50">
       <div className="max-w-3xl mx-auto">
@@ -379,7 +396,7 @@ function FAQ() {
           <p className="text-slate-500 text-lg">Tire suas dúvidas sobre o Visumo</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 px-6 divide-y-0">
-          {FAQ_ITEMS.map((item) => (
+          {items.map((item) => (
             <FaqItem key={item.q} {...item} />
           ))}
         </div>
