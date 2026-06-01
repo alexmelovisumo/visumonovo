@@ -70,17 +70,23 @@ async function ensureProfileExists(userId: string): Promise<void> {
 
 // ─── Create free subscription ─────────────────────────────────
 
-export async function createFreeSubscription(userId: string, planId: string) {
+export async function createFreeSubscription(userId: string, planId: string, trialDays = 0) {
   await ensureProfileExists(userId)
+
+  const isTrialing = trialDays > 0
+  const trialEnd   = isTrialing
+    ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000).toISOString()
+    : null
 
   const { error } = await supabase
     .from('user_subscriptions')
     .insert({
-      user_id:       userId,
-      plan_id:       planId,
-      status:        'active',
-      billing_cycle: 'monthly',
-      current_price: 0,
+      user_id:               userId,
+      plan_id:               planId,
+      status:                isTrialing ? 'trialing' : 'active',
+      billing_cycle:         'yearly',
+      current_price:         0,
+      subscription_end_date: trialEnd,
     })
 
   if (error) throw error

@@ -14,6 +14,8 @@ import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage'
 
 // ─── Public Pages ─────────────────────────────────────────────
 import { LandingPage } from '@/pages/public/LandingPage'
+import { ComingSoonPage } from '@/pages/public/ComingSoonPage'
+import { LaunchPage } from '@/pages/public/LaunchPage'
 import { PlanSelectionPage } from '@/pages/public/PlanSelectionPage'
 import { PricingPage } from '@/pages/public/PricingPage'
 import { TermsPage } from '@/pages/public/TermsPage'
@@ -84,7 +86,9 @@ export const router = createBrowserRouter([
   {
     element: <PublicLayout />,
     children: [
-      { path: '/', element: <LandingPage /> },
+      { path: '/', element: <ComingSoonPage /> },
+      { path: '/lancamento', element: <LaunchPage /> },
+      { path: '/landing', element: <LandingPage /> },
       { path: '/planos', element: <PricingPage /> },
       { path: '/faq', element: <FAQPage /> },
       { path: '/termos', element: <TermsPage /> },

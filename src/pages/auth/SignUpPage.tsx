@@ -238,6 +238,11 @@ export function SignUpPage() {
                   navigate('/dashboard/home', { replace: true })
                   return
                 }
+                if (couponData?.type === 'percentage' && couponData.value === 100) {
+                  await createFreeSubscription(authData.user.id, planData.id, 90)
+                  navigate('/dashboard/home', { replace: true })
+                  return
+                }
               }
               const sub = await createPendingSubscription(authData.user.id, planData.id, 'yearly', planData.price_yearly ?? 0)
               const checkoutUrl = await createCheckout(sub.id, planData.id, 'yearly', authData.session.access_token)

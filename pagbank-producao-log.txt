@@ -1,0 +1,84 @@
+==============================
+VISUMO — Teste Produção PagBank
+API: Checkout PagBank
+Data: 15/04/2026
+==============================
+
+REQUEST
+-------
+POST https://api.pagseguro.com/checkouts
+Authorization: Bearer {TOKEN_PRODUCAO}
+Content-Type: application/json
+
+{
+  "reference_id": "visumo-prod-test-001",
+  "expiration_date": "2026-04-17T23:59:00-03:00",
+  "customer": {
+    "name": "Jose da Silva",
+    "email": "email@test.com",
+    "phones": [{
+      "country": "55",
+      "area": "11",
+      "number": "999999999",
+      "type": "MOBILE"
+    }]
+  },
+  "items": [{
+    "reference_id": "plano_profissional",
+    "name": "Visumo Profissional - Anual",
+    "quantity": 1,
+    "unit_amount": 500
+  }],
+  "payment_methods": [
+    {"type": "CREDIT_CARD", "installments": 1},
+    {"type": "PIX"},
+    {"type": "BOLETO"}
+  ],
+  "payment_methods_configs": [{
+    "type": "CREDIT_CARD",
+    "config_options": [{"option": "INSTALLMENTS_LIMIT", "value": "1"}]
+  }],
+  "redirect_url": "https://www.visumo.com.br/dashboard/assinatura?status=paid",
+  "notification_urls": ["https://llqyincpxcazautwexyw.supabase.co/functions/v1/pagseguro-webhook"]
+}
+
+
+RESPONSE (HTTP 201)
+-------------------
+{
+  "id": "CHEC_740CCD5E-9997-4C00-9685-446EE93C6313",
+  "reference_id": "visumo-prod-test-001",
+  "expiration_date": "2026-04-17T23:59:00-03:00",
+  "created_at": "2026-04-15T21:01:58-03:00",
+  "status": "ACTIVE",
+  "customer": {
+    "name": "Jose da Silva",
+    "email": "email@test.com"
+  },
+  "items": [{
+    "reference_id": "plano_profissional",
+    "name": "Visumo Profissional - Anual",
+    "quantity": 1,
+    "unit_amount": 500
+  }],
+  "payment_methods": [
+    {"type": "CREDIT_CARD"},
+    {"type": "PIX"},
+    {"type": "BOLETO"}
+  ],
+  "redirect_url": "https://www.visumo.com.br/dashboard/assinatura?status=paid",
+  "notification_urls": ["https://llqyincpxcazautwexyw.supabase.co/functions/v1/pagseguro-webhook"],
+  "links": [
+    {
+      "rel": "SELF",
+      "href": "https://api.pagseguro.com/checkouts/CHEC_740CCD5E-9997-4C00-9685-446EE93C6313",
+      "method": "GET"
+    },
+    {
+      "rel": "PAY",
+      "href": "https://pagamento.pagbank.com.br/pagamento?code=740ccd5e-9997-4c00-9685-446ee93c6313",
+      "method": "GET"
+    }
+  ],
+  "origin": "CHECKOUT_WEB"
+}
