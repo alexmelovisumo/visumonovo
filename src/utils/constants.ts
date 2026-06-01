@@ -55,6 +55,7 @@ export const PROPOSAL_STATUS_LABELS = {
 
 export const SUBSCRIPTION_STATUS_LABELS = {
   trial: 'Trial',
+  trialing: 'Período Gratuito',
   active: 'Ativo',
   pending: 'Aguardando Pagamento',
   cancelled: 'Cancelado',
