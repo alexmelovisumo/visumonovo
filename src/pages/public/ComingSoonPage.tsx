@@ -3,8 +3,8 @@ import { MessageCircle, ArrowRight } from 'lucide-react'
 
 // ─── Substitua estes links quando criar os grupos ─────────────
 const WHATSAPP_GROUPS = [
-  { label: 'Grupo Empresas & Profissionais 001', href: 'https://chat.whatsapp.com/LINK001' },
-  { label: 'Grupo Empresas & Profissionais 002', href: 'https://chat.whatsapp.com/LINK002' },
+  { label: 'Grupo Empresas & Profissionais 001', href: 'https://chat.whatsapp.com/IVzqgEkUXjZ5uj2ydK4cyk' },
+  { label: 'Grupo Empresas & Profissionais 002', href: 'https://chat.whatsapp.com/LPjZX7mOhlG4HgLLZnZLcE' },
 ]
 
 export function ComingSoonPage() {
