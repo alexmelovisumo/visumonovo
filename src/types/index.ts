@@ -17,6 +17,7 @@ export type ProposalStatus = 'pending' | 'accepted' | 'rejected' | 'withdrawn'
 
 export type SubscriptionStatus =
   | 'trial'
+  | 'trialing'
   | 'active'
   | 'pending'
   | 'cancelled'
