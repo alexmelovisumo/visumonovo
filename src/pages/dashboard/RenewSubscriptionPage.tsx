@@ -176,6 +176,7 @@ function PlanCard({
 const STATUS_COLOR: Record<string, string> = {
   active:    'bg-green-100 text-green-700',
   trial:     'bg-blue-100 text-blue-700',
+  trialing:  'bg-blue-100 text-blue-700',
   pending:   'bg-amber-100 text-amber-700',
   expired:   'bg-slate-100 text-slate-500',
   cancelled: 'bg-red-100 text-red-600',

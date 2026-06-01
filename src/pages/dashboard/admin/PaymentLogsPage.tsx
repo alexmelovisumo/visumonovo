@@ -25,6 +25,7 @@ type SubWithUser = UserSubscription & {
 
 const STATUS_COLORS: Record<SubscriptionStatus, string> = {
   trial:     'bg-amber-100 text-amber-700',
+  trialing:  'bg-amber-100 text-amber-700',
   active:    'bg-green-100 text-green-700',
   pending:   'bg-rose-100 text-rose-700',
   cancelled: 'bg-slate-100 text-slate-500',
