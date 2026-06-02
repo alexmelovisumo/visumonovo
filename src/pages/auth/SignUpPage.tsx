@@ -238,6 +238,12 @@ export function SignUpPage() {
                   navigate('/dashboard/home', { replace: true })
                   return
                 }
+                if (couponData?.type === 'free_months') {
+                  // value = número de dias de trial
+                  await createFreeSubscription(authData.user.id, planData.id, couponData.value)
+                  navigate('/dashboard/home', { replace: true })
+                  return
+                }
                 if (couponData?.type === 'percentage' && couponData.value === 100) {
                   await createFreeSubscription(authData.user.id, planData.id, 90)
                   navigate('/dashboard/home', { replace: true })
