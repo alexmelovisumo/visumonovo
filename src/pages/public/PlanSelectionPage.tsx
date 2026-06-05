@@ -55,10 +55,13 @@ async function validateCoupon(code: string): Promise<CouponResult> {
 
   if (data.type === 'percentage') {
     discountPct = data.value
-    label = `${data.value}% de desconto`
+    label = data.value === 100 ? `${data.value}% de desconto (grátis por 3 meses)` : `${data.value}% de desconto`
   } else if (data.type === 'lifetime_free') {
     discountPct = 100
     label = 'GRÁTIS PARA SEMPRE'
+  } else if (data.type === 'free_months') {
+    discountPct = 100
+    label = `Grátis por ${data.value} ${data.value === 1 ? 'dia' : 'dias'}`
   }
 
   return { valid: true, discountPct, label, code: normalized }
