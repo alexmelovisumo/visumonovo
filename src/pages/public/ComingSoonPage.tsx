@@ -23,10 +23,17 @@ export function ComingSoonPage() {
 
       {/* Headline */}
       <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4 max-w-xl">
-        O marketplace de comunicação visual está chegando
+        O marketplace da comunicação visual está chegando.
       </h1>
-      <p className="text-primary-300 text-lg max-w-md mb-10 leading-relaxed">
-        Conectamos empresas, profissionais e fornecedores do setor. Cadastre-se nos nossos grupos e seja o primeiro a saber quando abrirmos.
+      <p className="text-primary-200 text-lg max-w-lg mb-6 leading-relaxed">
+        Entre agora nos grupos oficiais do WhatsApp e garanta os benefícios exclusivos de lançamento.
+      </p>
+      <div className="flex flex-col gap-2 mb-8">
+        <p className="text-white font-semibold text-base">🎁 6 meses GRÁTIS para empresas e profissionais.</p>
+        <p className="text-white font-semibold text-base">🎁 50% de desconto para fornecedores.</p>
+      </div>
+      <p className="text-primary-300 text-sm max-w-md mb-8 leading-relaxed">
+        Receba acesso antecipado, novidades em primeira mão e seja um dos primeiros a fazer parte do Visumo.
       </p>
 
       {/* WhatsApp groups */}

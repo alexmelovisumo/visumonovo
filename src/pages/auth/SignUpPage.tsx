@@ -245,7 +245,7 @@ export function SignUpPage() {
                   return
                 }
                 if (couponData?.type === 'percentage' && couponData.value === 100) {
-                  await createFreeSubscription(authData.user.id, planData.id, 90)
+                  await createFreeSubscription(authData.user.id, planData.id, 180)
                   navigate('/dashboard/home', { replace: true })
                   return
                 }

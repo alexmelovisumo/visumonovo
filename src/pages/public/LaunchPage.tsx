@@ -97,13 +97,13 @@ export function LaunchPage() {
       <section className="bg-gradient-to-b from-primary-950 to-primary-800 px-4 pt-16 pb-20 text-center">
         <div className="max-w-3xl mx-auto">
           <span className="inline-block bg-primary-500/30 border border-primary-400/40 text-primary-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-            Lançamento — Acesso gratuito por 3 meses
+            Lançamento — Acesso gratuito por 6 meses
           </span>
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
             O marketplace de<br />comunicação visual chegou
           </h1>
           <p className="text-primary-300 text-lg mb-8 leading-relaxed max-w-xl mx-auto">
-            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar — e por 3 meses é de graça.
+            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar — e por 6 meses é de graça para empresas e profissionais.
           </p>
 
           {/* Video principal */}
@@ -163,7 +163,7 @@ export function LaunchPage() {
       {/* ── Cupons ─────────────────────────────────────────── */}
       <section className="px-4 py-16 bg-white">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-black text-slate-900 mb-2">3 meses 100% gratuito</h2>
+          <h2 className="text-3xl font-black text-slate-900 mb-2">6 meses 100% gratuito</h2>
           <p className="text-slate-500 mb-10">Use o cupom do seu perfil ao se cadastrar. Sem cartão de crédito.</p>
 
           <div className="grid gap-4 sm:grid-cols-3 mb-8">
@@ -232,7 +232,7 @@ export function LaunchPage() {
       <section className="px-4 py-16 bg-primary-950 text-center">
         <div className="max-w-xl mx-auto">
           <h2 className="text-3xl font-black text-white mb-3">Comece agora, é gratuito</h2>
-          <p className="text-primary-300 mb-8">3 meses sem custo. Sem cartão de crédito. Cancele quando quiser.</p>
+          <p className="text-primary-300 mb-8">6 meses sem custo. Sem cartão de crédito. Cancele quando quiser.</p>
           <Link
             to="/escolher-plano"
             className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl px-8 py-4 transition-colors shadow-lg text-lg"
