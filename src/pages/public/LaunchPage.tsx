@@ -4,20 +4,11 @@ import {
   Building2, Wrench, Package, Play,
 } from 'lucide-react'
 
-// ─── Substitua pelos links reais quando criar os grupos ───────
 const WHATSAPP_GROUPS = [
   { label: 'Grupo Empresas & Profissionais 001', href: 'https://chat.whatsapp.com/IVzqgEkUXjZ5uj2ydK4cyk' },
   { label: 'Grupo Empresas & Profissionais 002', href: 'https://chat.whatsapp.com/LPjZX7mOhlG4HgLLZnZLcE' },
 ]
 
-// ─── Cupons por perfil ────────────────────────────────────────
-const COUPONS = [
-  { type: 'Empresa',            code: 'BETAEMPRESA',    plan: 'plano_empresa',    color: 'bg-blue-600' },
-  { type: 'Profissional',       code: 'BETAPRO',        plan: 'plano_profissional', color: 'bg-green-600' },
-  { type: 'Empresa Prestadora', code: 'BETAPRESTADORA', plan: 'plano_empresa_prestadora', color: 'bg-teal-600' },
-]
-
-// ─── Benefícios por perfil ────────────────────────────────────
 const PROFILES = [
   {
     icon: <Building2 size={28} className="text-blue-600" />,
@@ -30,8 +21,6 @@ const PROFILES = [
       'Gerencie tudo em um só lugar',
       'Chat direto com profissionais',
     ],
-    coupon: 'BETAEMPRESA',
-    plan: 'plano_empresa',
   },
   {
     icon: <Wrench size={28} className="text-green-600" />,
@@ -44,26 +33,21 @@ const PROFILES = [
       'Construa portfólio e reputação',
       'Gerencie seus projetos e clientes',
     ],
-    coupon: 'BETAPRO',
-    plan: 'plano_profissional',
   },
   {
     icon: <Package size={28} className="text-teal-600" />,
     bg: 'bg-teal-50',
-    title: 'Empresa Prestadora',
-    sub: 'Presta e contrata serviços',
+    title: 'Fornecedor',
+    sub: 'Fornece materiais e matéria-prima',
     benefits: [
-      'Publique e receba projetos',
-      'Portfólio de trabalhos realizados',
-      'Gerencie equipes e contratações',
-      'Visibilidade completa no mercado',
+      'Exponha seus produtos para todo o mercado',
+      'Alcance empresas e profissionais da área',
+      'Divulgue promoções e novidades',
+      'Receba cotações diretamente',
     ],
-    coupon: 'BETAPRESTADORA',
-    plan: 'plano_empresa_prestadora',
   },
 ]
 
-// ─── Video placeholder ────────────────────────────────────────
 function VideoPlaceholder({ label }: { label: string }) {
   return (
     <div className="w-full aspect-video bg-primary-950 rounded-2xl flex flex-col items-center justify-center gap-3 border border-primary-800">
@@ -75,7 +59,6 @@ function VideoPlaceholder({ label }: { label: string }) {
   )
 }
 
-// ─── Page ─────────────────────────────────────────────────────
 export function LaunchPage() {
   return (
     <div className="min-h-screen bg-white">
@@ -97,13 +80,13 @@ export function LaunchPage() {
       <section className="bg-gradient-to-b from-primary-950 to-primary-800 px-4 pt-16 pb-20 text-center">
         <div className="max-w-3xl mx-auto">
           <span className="inline-block bg-primary-500/30 border border-primary-400/40 text-primary-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-            Lançamento — Acesso gratuito por 6 meses
+            Lançamento — Benefícios exclusivos para membros
           </span>
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
-            O marketplace de<br />comunicação visual chegou
+            O marketplace da<br />comunicação visual chegou
           </h1>
           <p className="text-primary-300 text-lg mb-8 leading-relaxed max-w-xl mx-auto">
-            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar — e por 6 meses é de graça para empresas e profissionais.
+            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar.
           </p>
 
           {/* Video principal */}
@@ -111,14 +94,15 @@ export function LaunchPage() {
             <VideoPlaceholder label="Vídeo de apresentação — em breve" />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to="/escolher-plano"
-              className="inline-flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-400 text-white font-semibold rounded-2xl px-6 py-3.5 transition-colors shadow-lg"
-            >
-              Quero meu acesso gratuito <ArrowRight size={18} />
-            </Link>
-          </div>
+          <a
+            href={WHATSAPP_GROUPS[0].href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-2xl px-6 py-3.5 transition-colors shadow-lg"
+          >
+            <MessageCircle size={18} />
+            Entrar no grupo e receber meu cupom
+          </a>
         </div>
       </section>
 
@@ -127,7 +111,7 @@ export function LaunchPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-slate-900 mb-2">Para quem é o Visumo?</h2>
-            <p className="text-slate-500">Escolha seu perfil e comece gratuitamente</p>
+            <p className="text-slate-500">Uma plataforma para toda a cadeia da comunicação visual</p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-3">
@@ -148,49 +132,14 @@ export function LaunchPage() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to={`/cadastro?plano=${p.plan}&cupom=${p.coupon}`}
-                  className="mt-auto flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-700 text-white font-semibold rounded-xl px-4 py-3 transition-colors text-sm"
-                >
-                  Começar grátis com código <span className="font-mono bg-white/20 px-1.5 rounded">{p.coupon}</span>
-                </Link>
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ── Cupons ─────────────────────────────────────────── */}
-      <section className="px-4 py-16 bg-white">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-black text-slate-900 mb-2">6 meses 100% gratuito</h2>
-          <p className="text-slate-500 mb-10">Use o cupom do seu perfil ao se cadastrar. Sem cartão de crédito.</p>
-
-          <div className="grid gap-4 sm:grid-cols-3 mb-8">
-            {COUPONS.map(c => (
-              <div key={c.code} className="bg-slate-50 rounded-2xl border border-slate-200 p-5 text-center">
-                <p className="text-slate-500 text-sm mb-2">{c.type}</p>
-                <p className={`font-mono font-black text-xl text-white ${c.color} rounded-xl px-4 py-2.5 mb-3`}>
-                  {c.code}
-                </p>
-                <Link
-                  to={`/cadastro?plano=${c.plan}&cupom=${c.code}`}
-                  className="text-sm text-primary-600 font-semibold hover:text-primary-700 flex items-center justify-center gap-1"
-                >
-                  Usar este cupom <ArrowRight size={13} />
-                </Link>
-              </div>
-            ))}
-          </div>
-
-          <p className="text-xs text-slate-400">
-            Cupons válidos por tempo limitado. Após o período gratuito, escolha um plano para continuar.
-          </p>
         </div>
       </section>
 
       {/* ── Como funciona ──────────────────────────────────── */}
-      <section className="px-4 py-16 bg-slate-50">
+      <section className="px-4 py-16 bg-white">
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-slate-900 mb-2">Como funciona</h2>
@@ -201,15 +150,18 @@ export function LaunchPage() {
       </section>
 
       {/* ── Grupos WhatsApp ────────────────────────────────── */}
-      <section className="px-4 py-16 bg-white">
+      <section className="px-4 py-16 bg-slate-50">
         <div className="max-w-xl mx-auto text-center">
           <div className="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-5">
             <MessageCircle size={28} className="text-green-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Entre na comunidade</h2>
-          <p className="text-slate-500 mb-8 leading-relaxed">
-            Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe novidades e participe das lives de apresentação ao vivo.
+          <p className="text-slate-500 mb-3 leading-relaxed">
+            Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe as novidades e receba seu cupom exclusivo de lançamento.
           </p>
+          <div className="flex gap-2 justify-center mb-8">
+            <span className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">🎁 6 meses grátis — Empresas e Profissionais</span>
+          </div>
 
           <div className="flex flex-col gap-3">
             {WHATSAPP_GROUPS.map(g => (
@@ -231,13 +183,13 @@ export function LaunchPage() {
       {/* ── CTA final ──────────────────────────────────────── */}
       <section className="px-4 py-16 bg-primary-950 text-center">
         <div className="max-w-xl mx-auto">
-          <h2 className="text-3xl font-black text-white mb-3">Comece agora, é gratuito</h2>
-          <p className="text-primary-300 mb-8">6 meses sem custo. Sem cartão de crédito. Cancele quando quiser.</p>
+          <h2 className="text-3xl font-black text-white mb-3">Já tem seu cupom?</h2>
+          <p className="text-primary-300 mb-8">Cadastre-se agora e ative seu acesso gratuito.</p>
           <Link
             to="/escolher-plano"
             className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-400 text-white font-bold rounded-2xl px-8 py-4 transition-colors shadow-lg text-lg"
           >
-            Criar minha conta grátis <ArrowRight size={20} />
+            Criar minha conta <ArrowRight size={20} />
           </Link>
         </div>
       </section>
