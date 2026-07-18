@@ -96,41 +96,73 @@ export function LaunchPage() {
       {/* ── Hero ───────────────────────────────────────────── */}
       <section className="bg-gradient-to-b from-primary-950 to-primary-800 px-4 pt-16 pb-20 text-center">
         <div className="max-w-3xl mx-auto">
-          <span className="inline-block bg-primary-500/30 border border-primary-400/40 text-primary-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-            Lançamento — Benefícios exclusivos para membros
-          </span>
-          <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
-            O marketplace da<br />comunicação visual chegou
-          </h1>
-          <p className="text-primary-300 text-lg mb-10 leading-relaxed max-w-xl mx-auto">
-            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar, em todo o Brasil.
-          </p>
 
-          {/* ── Pitch visual no lugar do vídeo ── */}
-          <div className="max-w-2xl mx-auto mb-10 bg-white/5 border border-white/10 rounded-2xl p-8 text-left">
-            <p className="text-primary-200 text-sm font-semibold uppercase tracking-wider mb-5">Quem criou o Visumo</p>
-            <p className="text-white text-lg leading-relaxed mb-6">
-              "Me chamo <span className="font-bold text-primary-200">Alexandro de Melo</span> e criei o Visumo para resolver um problema real da comunicação visual brasileira: empresas sem profissionais, profissionais sem trabalho, e fornecedores sem visibilidade — todos no mesmo setor, sem se conectar."
+          {/* Frase de abertura impactante */}
+          <p className="text-primary-300 text-lg sm:text-xl leading-relaxed max-w-xl mx-auto mb-3">
+            A comunicação visual movimenta bilhões todos os anos.
+          </p>
+          <p className="text-primary-300 text-lg sm:text-xl leading-relaxed max-w-xl mx-auto mb-3">
+            Mas nunca teve uma plataforma capaz de conectar todo o setor.
+          </p>
+          <p className="text-white text-2xl sm:text-3xl font-black mb-10">Até agora.</p>
+
+          {/* Logo + nome */}
+          <div className="flex items-center justify-center gap-3 mb-10">
+            <img src="/icons/icon-192x192.png" alt="Visumo" className="w-14 h-14 rounded-2xl shadow-lg" />
+            <span className="text-white font-black text-4xl tracking-tight">Visumo</span>
+          </div>
+
+          {/* Texto principal */}
+          <div className="max-w-xl mx-auto mb-10 space-y-4 text-left sm:text-center">
+            <p className="text-primary-200 text-xl font-semibold">A comunicação visual nunca mais será a mesma.</p>
+            <p className="text-white text-2xl font-black">No dia 20/07/2026, nasce o Visumo.</p>
+            <p className="text-primary-300 text-base leading-relaxed">
+              A plataforma que conecta empresas, profissionais e fornecedores em um único ecossistema.
             </p>
-            <div className="grid sm:grid-cols-3 gap-4 pt-5 border-t border-white/10">
-              <div className="text-center">
-                <p className="text-3xl font-black text-white">🏢</p>
-                <p className="text-primary-200 text-sm mt-1 font-medium">Para empresas</p>
-                <p className="text-primary-400 text-xs mt-0.5">Contrate sem fronteiras</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-black text-white">🔧</p>
-                <p className="text-primary-200 text-sm mt-1 font-medium">Para profissionais</p>
-                <p className="text-primary-400 text-xs mt-0.5">Trabalho na sua região</p>
-              </div>
-              <div className="text-center">
-                <p className="text-3xl font-black text-white">📦</p>
-                <p className="text-primary-200 text-sm mt-1 font-medium">Para fornecedores</p>
-                <p className="text-primary-400 text-xs mt-0.5">Visibilidade nacional</p>
-              </div>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center pt-2">
+              {['Mais oportunidades.', 'Mais conexões.', 'Mais negócios.'].map(t => (
+                <span key={t} className="text-white font-bold text-sm bg-white/10 rounded-full px-4 py-1.5">{t}</span>
+              ))}
             </div>
           </div>
 
+          {/* Card Live */}
+          <div className="max-w-2xl mx-auto mb-10 bg-white/5 border border-white/10 rounded-2xl p-7 text-left">
+            <div className="flex items-center gap-2 mb-4">
+              <Radio size={16} className="text-rose-400 animate-pulse" />
+              <p className="text-rose-400 text-sm font-bold uppercase tracking-wide">Live Oficial de Lançamento</p>
+            </div>
+            <div className="grid sm:grid-cols-2 gap-3 mb-5">
+              {[
+                { dia: '21', label: '1ª Live' },
+                { dia: '22', label: '2ª Live' },
+              ].map(live => (
+                <div key={live.dia} className="bg-primary-900/60 border border-primary-700 rounded-xl p-4 text-center">
+                  <p className="text-primary-400 text-xs font-semibold mb-1">{live.label}</p>
+                  <p className="text-white text-3xl font-black">{live.dia} <span className="text-lg font-semibold text-primary-300">JUL</span></p>
+                  <p className="text-primary-200 text-sm font-semibold mt-1">às 20h00</p>
+                </div>
+              ))}
+            </div>
+            <ul className="space-y-2">
+              {[
+                'Conheça o Visumo por dentro',
+                'Veja como gerar novos negócios na plataforma',
+                'Entenda como empresas, profissionais e fornecedores trabalham juntos',
+                'Tire suas dúvidas ao vivo',
+              ].map(item => (
+                <li key={item} className="flex items-start gap-2 text-sm text-primary-200">
+                  <CheckCircle2 size={14} className="text-green-400 shrink-0 mt-0.5" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* CTA grupos */}
+          <p className="text-primary-300 text-sm mb-4">
+            Garanta sua vaga entrando em um dos grupos oficiais do WhatsApp.
+          </p>
           <a
             href={WHATSAPP_GROUPS[0].href}
             target="_blank"
@@ -138,7 +170,7 @@ export function LaunchPage() {
             className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-2xl px-6 py-3.5 transition-colors shadow-lg"
           >
             <MessageCircle size={18} />
-            Entrar no grupo e garantir meu benefício
+            Entrar no grupo oficial
           </a>
         </div>
       </section>
@@ -212,27 +244,9 @@ export function LaunchPage() {
             <MessageCircle size={28} className="text-green-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Entre na comunidade</h2>
-          <p className="text-slate-500 mb-6 leading-relaxed">
-            Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe as novidades e receba seu cupom exclusivo na live de lançamento.
+          <p className="text-slate-500 mb-8 leading-relaxed">
+            Participe dos nossos grupos no WhatsApp. Receba seu cupom exclusivo de lançamento e acompanhe todas as novidades.
           </p>
-
-          {/* Cards de live */}
-          <div className="grid grid-cols-2 gap-3 mb-8">
-            {[
-              { dia: '21', mes: 'JUL', label: '1ª Live' },
-              { dia: '22', mes: 'JUL', label: '2ª Live' },
-            ].map(live => (
-              <div key={live.dia} className="bg-primary-950 rounded-2xl p-4 text-center border border-primary-800">
-                <div className="flex items-center justify-center gap-1.5 mb-2">
-                  <Radio size={13} className="text-rose-400 animate-pulse" />
-                  <span className="text-rose-400 text-xs font-bold uppercase tracking-wide">{live.label}</span>
-                </div>
-                <p className="text-white text-3xl font-black leading-none">{live.dia}</p>
-                <p className="text-primary-400 text-xs font-semibold mt-0.5">{live.mes}</p>
-                <p className="text-primary-300 text-sm font-semibold mt-2">às 20h00</p>
-              </div>
-            ))}
-          </div>
 
           <div className="flex flex-col gap-3 mb-6">
             {WHATSAPP_GROUPS.map(g => (
