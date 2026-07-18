@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import {
   MessageCircle, ArrowRight, CheckCircle2,
   Building2, Wrench, Package,
-  Search, FileText, MessageSquare, Star,
+  Search, FileText, MessageSquare, Star, Radio,
 } from 'lucide-react'
 
 const WHATSAPP_GROUPS = [
@@ -212,10 +212,27 @@ export function LaunchPage() {
             <MessageCircle size={28} className="text-green-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Entre na comunidade</h2>
-          <p className="text-slate-500 mb-2 leading-relaxed">
-            Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe as novidades e receba seu cupom exclusivo de lançamento.
+          <p className="text-slate-500 mb-6 leading-relaxed">
+            Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe as novidades e receba seu cupom exclusivo na live de lançamento.
           </p>
-          <p className="text-sm text-slate-400 mb-8">Os cupons serão distribuídos ao vivo — fique ligado nas datas de lançamento.</p>
+
+          {/* Cards de live */}
+          <div className="grid grid-cols-2 gap-3 mb-8">
+            {[
+              { dia: '21', mes: 'JUL', label: '1ª Live' },
+              { dia: '22', mes: 'JUL', label: '2ª Live' },
+            ].map(live => (
+              <div key={live.dia} className="bg-primary-950 rounded-2xl p-4 text-center border border-primary-800">
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <Radio size={13} className="text-rose-400 animate-pulse" />
+                  <span className="text-rose-400 text-xs font-bold uppercase tracking-wide">{live.label}</span>
+                </div>
+                <p className="text-white text-3xl font-black leading-none">{live.dia}</p>
+                <p className="text-primary-400 text-xs font-semibold mt-0.5">{live.mes}</p>
+                <p className="text-primary-300 text-sm font-semibold mt-2">às 20h00</p>
+              </div>
+            ))}
+          </div>
 
           <div className="flex flex-col gap-3 mb-6">
             {WHATSAPP_GROUPS.map(g => (
