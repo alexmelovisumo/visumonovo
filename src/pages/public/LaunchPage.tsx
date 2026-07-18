@@ -115,7 +115,7 @@ export function LaunchPage() {
           {/* Texto principal */}
           <div className="max-w-xl mx-auto mb-10 space-y-4 text-left sm:text-center">
             <p className="text-primary-200 text-xl font-semibold">A comunicação visual nunca mais será a mesma.</p>
-            <p className="text-white text-2xl font-black">No dia 20/07/2026, nasce o Visumo.</p>
+            <p className="text-white text-2xl font-black">No dia 21/07/2026, nasce o Visumo.</p>
             <p className="text-primary-300 text-base leading-relaxed">
               A plataforma que conecta empresas, profissionais e fornecedores em um único ecossistema.
             </p>
@@ -160,8 +160,11 @@ export function LaunchPage() {
           </div>
 
           {/* CTA grupos */}
-          <p className="text-primary-300 text-sm mb-4">
+          <p className="text-primary-300 text-sm mb-2">
             Garanta sua vaga entrando em um dos grupos oficiais do WhatsApp.
+          </p>
+          <p className="text-primary-400 text-xs mb-5">
+            Lá você recebe o cupom exclusivo de lançamento, acompanha todas as novidades e participa da live ao vivo.
           </p>
           <a
             href={WHATSAPP_GROUPS[0].href}
@@ -170,7 +173,7 @@ export function LaunchPage() {
             className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-2xl px-6 py-3.5 transition-colors shadow-lg"
           >
             <MessageCircle size={18} />
-            Entrar no grupo oficial
+            Entrar no grupo e receber meu cupom
           </a>
         </div>
       </section>
