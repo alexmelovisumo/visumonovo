@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import {
   MessageCircle, ArrowRight, CheckCircle2,
-  Building2, Wrench, Package, Play,
+  Building2, Wrench, Package,
+  Search, FileText, MessageSquare, Star,
 } from 'lucide-react'
 
 const WHATSAPP_GROUPS = [
@@ -48,16 +49,32 @@ const PROFILES = [
   },
 ]
 
-function VideoPlaceholder({ label }: { label: string }) {
-  return (
-    <div className="w-full aspect-video bg-primary-950 rounded-2xl flex flex-col items-center justify-center gap-3 border border-primary-800">
-      <div className="w-16 h-16 bg-primary-700/50 rounded-full flex items-center justify-center">
-        <Play size={28} className="text-primary-300 ml-1" />
-      </div>
-      <p className="text-primary-400 text-sm">{label}</p>
-    </div>
-  )
-}
+const HOW_IT_WORKS = [
+  {
+    step: '01',
+    icon: <FileText size={22} className="text-primary-600" />,
+    title: 'Empresa publica um projeto',
+    desc: 'Descreve o serviço, prazo e orçamento. Em minutos está disponível para profissionais de todo o Brasil.',
+  },
+  {
+    step: '02',
+    icon: <Search size={22} className="text-green-600" />,
+    title: 'Profissional encontra e se candidata',
+    desc: 'Filtra por região, especialidade e valor. Envia proposta com mensagem e prazo estimado.',
+  },
+  {
+    step: '03',
+    icon: <MessageSquare size={22} className="text-amber-600" />,
+    title: 'Negociação e fechamento',
+    desc: 'Empresa escolhe o profissional, negocia detalhes pelo chat integrado e fecha o contrato.',
+  },
+  {
+    step: '04',
+    icon: <Star size={22} className="text-rose-500" />,
+    title: 'Entrega e avaliação',
+    desc: 'Projeto concluído, ambos avaliam. Reputação construída a cada entrega bem-feita.',
+  },
+]
 
 export function LaunchPage() {
   return (
@@ -85,13 +102,33 @@ export function LaunchPage() {
           <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
             O marketplace da<br />comunicação visual chegou
           </h1>
-          <p className="text-primary-300 text-lg mb-8 leading-relaxed max-w-xl mx-auto">
-            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar.
+          <p className="text-primary-300 text-lg mb-10 leading-relaxed max-w-xl mx-auto">
+            Empresas publicam projetos. Profissionais enviam propostas. Fornecedores oferecem materiais. Tudo em um só lugar, em todo o Brasil.
           </p>
 
-          {/* Video principal */}
-          <div className="max-w-2xl mx-auto mb-8">
-            <VideoPlaceholder label="Vídeo de apresentação — em breve" />
+          {/* ── Pitch visual no lugar do vídeo ── */}
+          <div className="max-w-2xl mx-auto mb-10 bg-white/5 border border-white/10 rounded-2xl p-8 text-left">
+            <p className="text-primary-200 text-sm font-semibold uppercase tracking-wider mb-5">Quem criou o Visumo</p>
+            <p className="text-white text-lg leading-relaxed mb-6">
+              "Me chamo <span className="font-bold text-primary-200">Alexandro de Melo</span> e criei o Visumo para resolver um problema real da comunicação visual brasileira: empresas sem profissionais, profissionais sem trabalho, e fornecedores sem visibilidade — todos no mesmo setor, sem se conectar."
+            </p>
+            <div className="grid sm:grid-cols-3 gap-4 pt-5 border-t border-white/10">
+              <div className="text-center">
+                <p className="text-3xl font-black text-white">🏢</p>
+                <p className="text-primary-200 text-sm mt-1 font-medium">Para empresas</p>
+                <p className="text-primary-400 text-xs mt-0.5">Contrate sem fronteiras</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-white">🔧</p>
+                <p className="text-primary-200 text-sm mt-1 font-medium">Para profissionais</p>
+                <p className="text-primary-400 text-xs mt-0.5">Trabalho na sua região</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-white">📦</p>
+                <p className="text-primary-200 text-sm mt-1 font-medium">Para fornecedores</p>
+                <p className="text-primary-400 text-xs mt-0.5">Visibilidade nacional</p>
+              </div>
+            </div>
           </div>
 
           <a
@@ -101,7 +138,7 @@ export function LaunchPage() {
             className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-400 text-white font-semibold rounded-2xl px-6 py-3.5 transition-colors shadow-lg"
           >
             <MessageCircle size={18} />
-            Entrar no grupo e receber meu cupom
+            Entrar no grupo e garantir meu benefício
           </a>
         </div>
       </section>
@@ -143,9 +180,28 @@ export function LaunchPage() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-3xl font-black text-slate-900 mb-2">Como funciona</h2>
-            <p className="text-slate-500">Veja na prática como o Visumo conecta o mercado</p>
+            <p className="text-slate-500">Do projeto ao pagamento, tudo dentro da plataforma</p>
           </div>
-          <VideoPlaceholder label="Vídeo demonstração — em breve" />
+
+          <div className="relative">
+            {/* linha conectora */}
+            <div className="hidden sm:block absolute left-7 top-8 bottom-8 w-0.5 bg-slate-100" />
+
+            <div className="flex flex-col gap-6">
+              {HOW_IT_WORKS.map((item) => (
+                <div key={item.step} className="flex gap-5 items-start">
+                  <div className="shrink-0 w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center justify-center relative z-10">
+                    {item.icon}
+                    <span className="text-[10px] font-bold text-slate-400 mt-0.5">{item.step}</span>
+                  </div>
+                  <div className="pt-1">
+                    <h3 className="font-bold text-slate-900 text-base mb-1">{item.title}</h3>
+                    <p className="text-slate-500 text-sm leading-relaxed">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
@@ -156,14 +212,12 @@ export function LaunchPage() {
             <MessageCircle size={28} className="text-green-600" />
           </div>
           <h2 className="text-3xl font-black text-slate-900 mb-3">Entre na comunidade</h2>
-          <p className="text-slate-500 mb-3 leading-relaxed">
+          <p className="text-slate-500 mb-2 leading-relaxed">
             Participe dos nossos grupos no WhatsApp. Tire dúvidas, acompanhe as novidades e receba seu cupom exclusivo de lançamento.
           </p>
-          <div className="flex gap-2 justify-center mb-8">
-            <span className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-full px-3 py-1">🎁 6 meses grátis — Empresas e Profissionais</span>
-          </div>
+          <p className="text-sm text-slate-400 mb-8">Os cupons serão distribuídos ao vivo — fique ligado nas datas de lançamento.</p>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 mb-6">
             {WHATSAPP_GROUPS.map(g => (
               <a
                 key={g.href}
@@ -176,6 +230,9 @@ export function LaunchPage() {
                 {g.label}
               </a>
             ))}
+          </div>
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-3 text-sm text-amber-700 font-medium">
+            🎁 6 meses grátis para empresas e profissionais · 50% off para fornecedores
           </div>
         </div>
       </section>
