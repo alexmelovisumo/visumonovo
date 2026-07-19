@@ -1,12 +1,38 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { MessageCircle, ArrowRight, Radio } from 'lucide-react'
+import { MessageCircle, ArrowRight, Radio, Eye } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 const WHATSAPP_GROUPS = [
   { label: 'Grupo Empresas & Profissionais 001', href: 'https://chat.whatsapp.com/IVzqgEkUXjZ5uj2ydK4cyk' },
   { label: 'Grupo Empresas & Profissionais 002', href: 'https://chat.whatsapp.com/LPjZX7mOhlG4HgLLZnZLcE' },
 ]
 
+function usePageViews() {
+  const [count, setCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    // Evita contar a mesma sessão mais de uma vez
+    const key = 'visumo_visit_cs'
+    if (!sessionStorage.getItem(key)) {
+      sessionStorage.setItem(key, '1')
+      supabase.from('page_views').insert({ page: 'coming-soon' }).then(() => {})
+    }
+
+    // Busca o total
+    supabase
+      .from('page_views')
+      .select('*', { count: 'exact', head: true })
+      .eq('page', 'coming-soon')
+      .then(({ count }) => setCount(count ?? 0))
+  }, [])
+
+  return count
+}
+
 export function ComingSoonPage() {
+  const views = usePageViews()
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-primary-950 via-primary-900 to-primary-800 flex flex-col items-center justify-center px-4 text-center py-16">
 
@@ -78,6 +104,14 @@ export function ComingSoonPage() {
           Já tenho conta
         </Link>
       </div>
+
+      {/* Contador discreto */}
+      {views !== null && (
+        <div className="mt-8 flex items-center gap-1.5 text-primary-700 text-xs">
+          <Eye size={11} />
+          <span>{views.toLocaleString('pt-BR')} visualizações</span>
+        </div>
+      )}
     </div>
   )
 }
