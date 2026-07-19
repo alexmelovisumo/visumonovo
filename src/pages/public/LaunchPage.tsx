@@ -115,7 +115,7 @@ export function LaunchPage() {
           {/* Texto principal */}
           <div className="max-w-xl mx-auto mb-10 space-y-4 text-left sm:text-center">
             <p className="text-primary-200 text-xl font-semibold">A comunicação visual nunca mais será a mesma.</p>
-            <p className="text-white text-2xl font-black">No dia 21/07/2026, nasce o Visumo.</p>
+            <p className="text-white text-2xl font-black">Em breve, nasce o Visumo.</p>
             <p className="text-primary-300 text-base leading-relaxed">
               A plataforma que conecta empresas, profissionais e fornecedores em um único ecossistema.
             </p>
@@ -127,24 +127,16 @@ export function LaunchPage() {
           </div>
 
           {/* Card Live */}
-          <div className="max-w-2xl mx-auto mb-10 bg-white/5 border border-white/10 rounded-2xl p-7 text-left">
-            <div className="flex items-center gap-2 mb-4">
+          <div className="max-w-2xl mx-auto mb-10 bg-white/5 border border-white/10 rounded-2xl p-7 text-center">
+            <div className="flex items-center justify-center gap-2 mb-3">
               <Radio size={16} className="text-rose-400 animate-pulse" />
               <p className="text-rose-400 text-sm font-bold uppercase tracking-wide">Live Oficial de Lançamento</p>
             </div>
-            <div className="grid sm:grid-cols-2 gap-3 mb-5">
-              {[
-                { dia: '21', label: '1ª Live' },
-                { dia: '22', label: '2ª Live' },
-              ].map(live => (
-                <div key={live.dia} className="bg-primary-900/60 border border-primary-700 rounded-xl p-4 text-center">
-                  <p className="text-primary-400 text-xs font-semibold mb-1">{live.label}</p>
-                  <p className="text-white text-3xl font-black">{live.dia} <span className="text-lg font-semibold text-primary-300">JUL</span></p>
-                  <p className="text-primary-200 text-sm font-semibold mt-1">às 20h00</p>
-                </div>
-              ))}
-            </div>
-            <ul className="space-y-2">
+            <p className="text-white font-semibold text-base mb-3">Em breve teremos uma live de lançamento!</p>
+            <p className="text-primary-300 text-sm leading-relaxed mb-5">
+              A data será anunciada nos grupos oficiais do WhatsApp. Na live você vai conhecer o Visumo por dentro, tirar dúvidas ao vivo e receber seu cupom exclusivo.
+            </p>
+            <ul className="space-y-2 text-left max-w-sm mx-auto">
               {[
                 'Conheça o Visumo por dentro',
                 'Veja como gerar novos negócios na plataforma',

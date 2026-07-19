@@ -18,7 +18,7 @@ export function ComingSoonPage() {
 
       {/* Badge */}
       <span className="inline-block bg-primary-500/30 border border-primary-400/40 text-primary-200 text-xs font-semibold px-4 py-1.5 rounded-full mb-6 tracking-wide uppercase">
-        Lançamento — 21 de julho
+        Em breve
       </span>
 
       {/* Headline */}
@@ -30,23 +30,14 @@ export function ComingSoonPage() {
       </p>
 
       {/* Card Live */}
-      <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 text-left">
-        <div className="flex items-center gap-2 mb-4">
+      <div className="w-full max-w-sm bg-white/5 border border-white/10 rounded-2xl p-5 mb-8 text-center">
+        <div className="flex items-center justify-center gap-2 mb-3">
           <Radio size={14} className="text-rose-400 animate-pulse" />
           <p className="text-rose-400 text-xs font-bold uppercase tracking-wide">Live Oficial de Lançamento</p>
         </div>
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {[{ dia: '21', label: '1ª Live' }, { dia: '22', label: '2ª Live' }].map(live => (
-            <div key={live.dia} className="bg-primary-900/60 border border-primary-700 rounded-xl p-3 text-center">
-              <p className="text-primary-400 text-[10px] font-semibold mb-1">{live.label}</p>
-              <p className="text-white text-2xl font-black">{live.dia} <span className="text-sm font-semibold text-primary-300">JUL</span></p>
-              <p className="text-primary-200 text-xs font-semibold mt-1">às 20h00</p>
-            </div>
-          ))}
-        </div>
-        <p className="text-primary-300 text-xs leading-relaxed text-center">
-          Os cupons de lançamento serão distribuídos ao vivo.<br />
-          Entre no grupo e não perca!
+        <p className="text-white font-semibold text-sm mb-2">Em breve teremos uma live de lançamento!</p>
+        <p className="text-primary-300 text-xs leading-relaxed">
+          A data será anunciada nos grupos oficiais do WhatsApp. Os cupons exclusivos serão distribuídos ao vivo — entre no grupo e não perca!
         </p>
       </div>
 
