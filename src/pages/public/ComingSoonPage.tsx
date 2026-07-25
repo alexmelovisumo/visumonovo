@@ -12,19 +12,19 @@ function usePageViews() {
   const [count, setCount] = useState<number | null>(null)
 
   useEffect(() => {
-    // Evita contar a mesma sessão mais de uma vez
-    const key = 'visumo_visit_cs'
-    if (!sessionStorage.getItem(key)) {
-      sessionStorage.setItem(key, '1')
-      supabase.from('page_views').insert({ page: 'coming-soon' }).then(() => {})
+    async function track() {
+      const key = 'visumo_visit_cs'
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1')
+        await supabase.from('page_views').insert({ page: 'coming-soon' })
+      }
+      const { count: c } = await supabase
+        .from('page_views')
+        .select('*', { count: 'exact', head: true })
+        .eq('page', 'coming-soon')
+      setCount(c ?? 0)
     }
-
-    // Busca o total
-    supabase
-      .from('page_views')
-      .select('*', { count: 'exact', head: true })
-      .eq('page', 'coming-soon')
-      .then(({ count }) => setCount(count ?? 0))
+    track()
   }, [])
 
   return count
